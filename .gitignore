@@ -25,3 +25,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Scripts de despliegue local (no subir al repo)
+deploy.py
+commit_msg*.txt
+deploy_script_guide.md
+Documentacion_Software.md

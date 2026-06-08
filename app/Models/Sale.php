@@ -26,6 +26,8 @@ class Sale extends Model
         'payment_method',
         'payment_reference',
         'change_amount',
+        'cash_amount',
+        'card_amount',
     ];
 
     protected function casts(): array
@@ -36,6 +38,8 @@ class Sale extends Model
             'discount' => 'decimal:2',
             'total' => 'decimal:2',
             'change_amount' => 'decimal:2',
+            'cash_amount' => 'decimal:2',
+            'card_amount' => 'decimal:2',
         ];
     }
 

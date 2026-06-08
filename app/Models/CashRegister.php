@@ -55,12 +55,12 @@ class CashRegister extends Model
 
     public function getTotalCashSales(): float
     {
-        return $this->sales()->where('payment_method', 'efectivo')->sum('total');
+        return (float) $this->sales()->sum('cash_amount');
     }
 
     public function getTotalCardSales(): float
     {
-        return $this->sales()->where('payment_method', 'tarjeta_transferencia')->sum('total');
+        return (float) $this->sales()->sum('card_amount');
     }
 
     public function getTotalWithdrawals(): float

@@ -52,6 +52,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+    Route::get('/pos/print/{sale}', [PosController::class, 'print'])->name('pos.print');
+    Route::get('/pos/print/{sale}/preview', [PosController::class, 'printPreview'])->name('pos.print.preview');
 
     Route::get('/cash_registers', [CashRegisterController::class, 'index'])->name('cash_registers.index');
     Route::post('/cash_registers/open', [CashRegisterController::class, 'open'])->name('cash_registers.open');

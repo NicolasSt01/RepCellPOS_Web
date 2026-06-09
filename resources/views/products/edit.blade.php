@@ -7,7 +7,7 @@
     </div>
 
     <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">
-        <form method="POST" action="{{ route('products.update', $product) }}" class="p-6 space-y-6">
+        <form method="POST" action="{{ route('products.update', $product) }}" enctype="multipart/form-data" class="p-6 space-y-6">
             @csrf
             @method('PUT')
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">

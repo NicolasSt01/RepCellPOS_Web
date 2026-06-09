@@ -49,10 +49,23 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <template x-for="product in filteredProducts" :key="product.id">
                             <button @click="addToCart(product)"
-                                class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left relative">
-                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100" x-text="product.name"></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'$' + parseFloat(product.sale_price).toFixed(2)"></p>
-                                <p class="text-xs" :class="product.available_stock > 0 ? 'text-gray-400' : 'text-red-500 font-semibold'" x-text="product.available_stock > 0 ? 'Stock: ' + product.available_stock : 'Sin stock'"></p>
+                                class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left relative flex gap-3 items-start">
+                                <template x-if="product.image_url">
+                                    <img :src="'/r2/' + product.image_url" :alt="product.name"
+                                        class="w-12 h-12 rounded-md object-cover flex-shrink-0 border border-gray-100 dark:border-gray-600">
+                                </template>
+                                <template x-if="!product.image_url">
+                                    <div class="w-12 h-12 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"></path>
+                                        </svg>
+                                    </div>
+                                </template>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" x-text="product.name"></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'$' + parseFloat(product.sale_price).toFixed(2)"></p>
+                                    <p class="text-xs" :class="product.available_stock > 0 ? 'text-gray-400' : 'text-red-500 font-semibold'" x-text="product.available_stock > 0 ? 'Stock: ' + product.available_stock : 'Sin stock'"></p>
+                                </div>
                             </button>
                         </template>
                         <template x-if="filteredProducts.length === 0">
@@ -74,21 +87,28 @@
                         <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">Carrito vacío</p>
                     </template>
                     <template x-for="(item, index) in cart" :key="index">
-                        <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg group">
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" x-text="item.description"></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    <span x-text="item.quantity"></span> x $<span x-text="parseFloat(item.unit_price).toFixed(2)"></span>
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-2 flex-shrink-0 ml-2">
-                                <div class="flex items-center gap-1">
-                                    <button @click="updateQuantity(index, -1)" class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-bold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">−</button>
-                                    <span class="text-sm font-semibold w-6 text-center" x-text="item.quantity"></span>
-                                    <button @click="updateQuantity(index, 1)" class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-bold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">+</button>
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg group relative">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-start gap-2 min-w-0 flex-1">
+                                    <template x-if="item.product_id">
+                                        <img :src="'/r2/' + (products.find(p => p.id === item.product_id)?.image_url || '')"
+                                            class="w-10 h-10 rounded object-cover flex-shrink-0 border border-gray-200 dark:border-gray-600"
+                                            :class="{'hidden': !products.find(p => p.id === item.product_id)?.image_url}">
+                                    </template>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-tight" x-text="item.description"></p>
                                 </div>
-                                <span class="text-sm font-medium text-gray-900 dark:text-gray-100 w-20 text-right">$<span x-text="parseFloat(item.quantity * item.unit_price).toFixed(2)"></span></span>
-                                <button @click="removeFromCart(index)" class="text-red-600 dark:text-red-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                                <button @click="removeFromCart(index)" class="text-red-600 dark:text-red-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">✕</button>
+                            </div>
+                            <div class="flex items-center justify-between mt-2">
+                                <div class="flex items-center gap-1">
+                                    <button @click="updateQuantity(index, -1)" class="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">−</button>
+                                    <span class="text-sm font-semibold w-7 text-center" x-text="item.quantity"></span>
+                                    <button @click="updateQuantity(index, 1)" class="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">+</button>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">$<span x-text="parseFloat(item.quantity * item.unit_price).toFixed(2)"></span></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400"><span x-text="item.quantity"></span> x $<span x-text="parseFloat(item.unit_price).toFixed(2)"></span></p>
+                                </div>
                             </div>
                         </div>
                     </template>

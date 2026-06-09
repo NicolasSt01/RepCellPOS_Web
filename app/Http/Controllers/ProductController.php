@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\R2StorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -47,7 +48,7 @@ class ProductController extends Controller
         return view('products.create', compact('categories'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, R2StorageService $r2): RedirectResponse
     {
         $validated = $request->validate([
             'category_id' => 'nullable|exists:categories,id',
@@ -65,6 +66,7 @@ class ProductController extends Controller
             'barcode' => 'nullable|string|max:255',
             'compatible_brand' => 'nullable|string|max:255',
             'compatible_model' => 'nullable|string|max:255',
+            'image' => 'nullable|image|max:5120',
         ]);
 
         $validated['has_tax'] = $request->boolean('has_tax');
@@ -72,6 +74,10 @@ class ProductController extends Controller
         if ($validated['type'] === 'servicio') {
             $validated['stock'] = 0;
             $validated['min_stock'] = 0;
+        }
+
+        if ($request->hasFile('image')) {
+            $validated['image_url'] = $r2->upload($request->file('image'), 'products');
         }
 
         Product::create($validated);
@@ -94,7 +100,7 @@ class ProductController extends Controller
         return view('products.edit', compact('product', 'categories'));
     }
 
-    public function update(Request $request, Product $product): RedirectResponse
+    public function update(Request $request, Product $product, R2StorageService $r2): RedirectResponse
     {
         $validated = $request->validate([
             'category_id' => 'nullable|exists:categories,id',
@@ -112,18 +118,36 @@ class ProductController extends Controller
             'compatible_brand' => 'nullable|string|max:255',
             'compatible_model' => 'nullable|string|max:255',
             'is_active' => 'boolean',
+            'image' => 'nullable|image|max:5120',
         ]);
 
         $validated['has_tax'] = $request->boolean('has_tax');
         $validated['is_active'] = $request->boolean('is_active');
+
+        if ($request->hasFile('image')) {
+            if ($product->image_url) {
+                $r2->delete($product->image_url);
+            }
+            $validated['image_url'] = $r2->upload($request->file('image'), 'products');
+        }
+
+        if ($request->boolean('remove_image')) {
+            if ($product->image_url) {
+                $r2->delete($product->image_url);
+            }
+            $validated['image_url'] = null;
+        }
 
         $product->update($validated);
 
         return redirect()->route('products.index')->with('success', 'Producto actualizado exitosamente.');
     }
 
-    public function destroy(Product $product): RedirectResponse
+    public function destroy(Product $product, R2StorageService $r2): RedirectResponse
     {
+        if ($product->image_url) {
+            $r2->delete($product->image_url);
+        }
         $product->delete();
 
         return redirect()->route('products.index')->with('success', 'Producto eliminado exitosamente.');

@@ -15,6 +15,12 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
+            @if($product->image_url)
+            <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6 flex items-center justify-center">
+                <img src="{{ $product->getImageUrl() }}" alt="{{ $product->name }}" class="max-h-64 rounded-lg object-contain">
+            </div>
+            @endif
+
             <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">
                 <div class="p-6">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Información del Producto</h2>

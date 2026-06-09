@@ -20,6 +20,7 @@ class Product extends Model
         'part_number',
         'name',
         'description',
+        'image_url',
         'type',
         'stock',
         'min_stock',
@@ -59,6 +60,14 @@ class Product extends Model
     public function isLowStock(): bool
     {
         return $this->type === 'producto' && $this->stock <= $this->min_stock;
+    }
+
+    public function getImageUrl(): ?string
+    {
+        if (!$this->image_url) {
+            return null;
+        }
+        return app(\App\Services\R2StorageService::class)->getUrl($this->image_url);
     }
 
     public function adjustStock(int $quantity, string $type, ?string $notes = null, $reference = null): KardexMovement

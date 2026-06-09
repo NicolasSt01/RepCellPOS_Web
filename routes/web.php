@@ -29,6 +29,15 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/r2/{path}', function ($path) {
+        if (!\Illuminate\Support\Facades\Storage::disk('r2')->exists($path)) {
+            abort(404);
+        }
+        $content = \Illuminate\Support\Facades\Storage::disk('r2')->get($path);
+        $mimeType = \Illuminate\Support\Facades\Storage::disk('r2')->mimeType($path);
+        return response($content, 200, ['Content-Type' => $mimeType]);
+    })->where('path', '.*')->name('r2.serve');
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 

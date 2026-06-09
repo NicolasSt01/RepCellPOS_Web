@@ -100,6 +100,13 @@
                 <textarea name="description" id="description" rows="3"
                     class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">{{ old('description') }}</textarea>
             </div>
+            <div>
+                <label for="image" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Imagen del Producto</label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">JPG, PNG, WebP o GIF. Máximo 5MB.</p>
+                <input type="file" name="image" id="image" accept="image/jpeg,image/png,image/webp,image/gif"
+                    class="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-600 dark:bg-gray-700">
+                @error('image') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+            </div>
             <div class="flex justify-end gap-3">
                 <a href="{{ route('products.index') }}" class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Cancelar</a>
                 <button type="submit" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">Guardar producto</button>

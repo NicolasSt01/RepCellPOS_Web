@@ -98,6 +98,28 @@
                 <textarea name="description" id="description" rows="3"
                     class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">{{ old('description', $product->description) }}</textarea>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Imagen del Producto</label>
+                <div class="flex items-start gap-4">
+                    @if($product->image_url)
+                    <div class="flex-shrink-0">
+                        <img src="{{ $product->getImageUrl() }}" alt="{{ $product->name }}" class="w-24 h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div class="mt-2">
+                            <input type="hidden" name="remove_image" value="0">
+                            <input type="checkbox" name="remove_image" id="remove_image" value="1"
+                                class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-600 dark:bg-gray-700">
+                            <label for="remove_image" class="ml-1 text-xs text-red-600 dark:text-red-400">Eliminar imagen actual</label>
+                        </div>
+                    </div>
+                    @endif
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">JPG, PNG, WebP o GIF. Máximo 5MB. {{ $product->image_url ? 'Subir una nueva reemplazará la actual.' : '' }}</p>
+                        <input type="file" name="image" id="image" accept="image/jpeg,image/png,image/webp,image/gif"
+                            class="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-600 dark:bg-gray-700">
+                        @error('image') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+            </div>
             <div class="flex items-center">
                 <input type="hidden" name="is_active" value="0">
                 <input type="checkbox" name="is_active" id="is_active" value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }}

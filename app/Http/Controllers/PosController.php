@@ -214,9 +214,11 @@ class PosController extends Controller
 
             // If this is a cobro_orden, update work order status
             if ($workOrder) {
-                $workOrder->update(['status' => 'en_reparacion']);
+                if ($workOrder->status === 'cotizacion_aprobada') {
+                    $workOrder->update(['status' => 'en_reparacion']);
+                }
                 $workOrder->addTimelineEvent(
-                    'en_reparacion',
+                    $workOrder->status,
                     Auth::user()->name,
                     "Orden cobrada desde POS — Venta #{$sale->id}"
                 );

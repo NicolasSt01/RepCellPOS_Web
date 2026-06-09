@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Models\WorkOrder;
+use App\Services\R2StorageService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,7 +49,7 @@ class WorkOrderController extends Controller
 
         $workOrders = $query->paginate(15)->withQueryString();
 
-        $technicians = User::whereHas('roles', fn($q) => $q->where('name', 'Tecnico'))->orderBy('name')->get();
+        $technicians = User::whereHas('roles', fn($q) => $q->whereIn('name', ['Tecnico', 'Admin Tenant']))->orderBy('name')->get();
 
         return view('work_orders.index', compact('workOrders', 'status', 'priority', 'search', 'technicians'));
     }
@@ -57,7 +60,48 @@ class WorkOrderController extends Controller
         return view('work_orders.create', compact('clients'));
     }
 
-    public function store(Request $request): RedirectResponse
+    /**
+     * AJAX endpoint for searching clients by name or phone.
+     */
+    public function searchClients(Request $request): JsonResponse
+    {
+        $query = $request->input('q', '');
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $clients = Client::where(function ($q) use ($query) {
+            $q->where('name', 'like', "%{$query}%")
+              ->orWhere('phone', 'like', "%{$query}%");
+        })->orderBy('name')->limit(10)->get(['id', 'name', 'phone', 'email']);
+
+        return response()->json($clients);
+    }
+
+    /**
+     * AJAX endpoint for creating a client inline from the multi-step form.
+     */
+    public function storeClient(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'notification_preference' => 'required|in:whatsapp,email,call',
+        ]);
+
+        $validated['tenant_id'] = Auth::user()->tenant_id;
+        $client = Client::create($validated);
+
+        return response()->json([
+            'id' => $client->id,
+            'name' => $client->name,
+            'phone' => $client->phone,
+            'email' => $client->email,
+        ]);
+    }
+
+    public function store(Request $request, R2StorageService $r2): RedirectResponse
     {
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
@@ -68,16 +112,49 @@ class WorkOrderController extends Controller
             'unlock_pattern' => 'nullable|string|max:255',
             'unlock_pin' => 'nullable|string|max:255',
             'problem_description' => 'required|string',
+            'images' => 'nullable|array|max:5',
+            'images.*' => 'image|mimes:jpeg,png,webp|max:5120',
+            'captured_images' => 'nullable|array|max:5',
+            'captured_images.*' => 'nullable|string',
         ]);
 
         $tenant = Auth::user()->tenant;
         $workOrderNumber = WorkOrder::generateWorkOrderNumber($tenant);
 
-        $workOrder = WorkOrder::create(array_merge($validated, [
+        // Upload images to R2
+        $imagePaths = [];
+
+        // Handle file uploads
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $imagePaths[] = $r2->upload($image, 'work_orders');
+            }
+        }
+
+        // Handle base64 captured images (from camera)
+        if ($request->has('captured_images')) {
+            foreach ($request->input('captured_images') as $base64Image) {
+                if (!empty($base64Image)) {
+                    try {
+                        $imagePaths[] = $r2->uploadFromBase64($base64Image, 'work_orders');
+                    } catch (\Exception $e) {
+                        // Skip invalid images silently
+                    }
+                }
+            }
+        }
+
+        $orderData = collect($validated)->only([
+            'client_id', 'device_brand', 'device_model', 'device_serial',
+            'device_imei', 'unlock_pattern', 'unlock_pin', 'problem_description',
+        ])->toArray();
+
+        $workOrder = WorkOrder::create(array_merge($orderData, [
             'user_id' => Auth::id(),
             'work_order_number' => $workOrderNumber,
             'status' => 'recibida',
             'priority' => 'media',
+            'images' => !empty($imagePaths) ? $imagePaths : null,
         ]));
 
         $workOrder->addTimelineEvent(
@@ -100,7 +177,7 @@ class WorkOrderController extends Controller
     public function show(WorkOrder $workOrder): View
     {
         $workOrder->load(['client', 'user', 'assignedTechnician', 'quote.quoteItems']);
-        $technicians = User::whereHas('roles', fn($q) => $q->where('name', 'Tecnico'))->orderBy('name')->get();
+        $technicians = User::whereHas('roles', fn($q) => $q->whereIn('name', ['Tecnico', 'Admin Tenant']))->orderBy('name')->get();
         return view('work_orders.show', compact('workOrder', 'technicians'));
     }
 
@@ -204,7 +281,7 @@ class WorkOrderController extends Controller
 
         $workOrders = $query->latest()->paginate(25)->withQueryString();
 
-        $technicians = User::whereHas('roles', fn($q) => $q->where('name', 'Tecnico'))->orderBy('name')->get();
+        $technicians = User::whereHas('roles', fn($q) => $q->whereIn('name', ['Tecnico', 'Admin Tenant']))->orderBy('name')->get();
 
         $summary = WorkOrder::selectRaw("
             COUNT(*) as total,

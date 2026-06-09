@@ -43,6 +43,8 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('clients', ClientController::class);
 
+    Route::get('/work_orders/search-clients', [WorkOrderController::class, 'searchClients'])->name('work_orders.search_clients');
+    Route::post('/work_orders/store-client', [WorkOrderController::class, 'storeClient'])->name('work_orders.store_client');
     Route::resource('work_orders', WorkOrderController::class);
     Route::get('/work_orders/reports', [WorkOrderController::class, 'reports'])->name('work_orders.reports');
     Route::post('/work_orders/{work_order}/change_status', [WorkOrderController::class, 'changeStatus'])->name('work_orders.change_status');

@@ -185,6 +185,51 @@
                 </div>
             </div>
 
+            @can('quotes.view')
+            <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Cotización</h3>
+                    @if($workOrder->quote)
+                        @php $quote = $workOrder->quote; @endphp
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Estado</span>
+                                <span class="inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium
+                                    {{ $quote->status === 'aprobada' ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : '' }}
+                                    {{ $quote->status === 'enviada' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' : '' }}
+                                    {{ $quote->status === 'pendiente' ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' : '' }}
+                                    {{ $quote->status === 'rechazada' ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : '' }}">
+                                    {{ ucfirst($quote->status) }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Total</span>
+                                <span class="text-sm font-bold text-gray-900 dark:text-gray-100">${{ number_format($quote->total, 2) }}</span>
+                            </div>
+                            <div class="pt-2 space-y-2">
+                                <a href="{{ route('quotes.show', $workOrder) }}"
+                                    class="block w-full text-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                                    {{ $quote->quoteItems->count() > 0 ? 'Ver cotización' : 'Crear cotización' }}
+                                </a>
+                                @if($quote->status === 'aprobada')
+                                <a href="{{ route('pos.index', ['work_order_id' => $workOrder->id]) }}"
+                                    class="block w-full text-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 transition-colors">
+                                    Cobrar desde POS
+                                </a>
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">No hay cotización creada.</p>
+                        <a href="{{ route('quotes.show', $workOrder) }}"
+                            class="block w-full text-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                            Crear cotización
+                        </a>
+                    @endif
+                </div>
+            </div>
+            @endcan
+
             @can('work_orders.change_status')
             @if($workOrder->status !== 'terminada' && $workOrder->status !== 'cancelada')
             <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">

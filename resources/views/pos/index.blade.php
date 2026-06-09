@@ -20,6 +20,19 @@
         @endif
     </div>
 
+    @if($workOrder && $workOrder->quote && $workOrder->quote->status === 'aprobada')
+    <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+                <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Cobro de orden: {{ $workOrder->work_order_number }}</p>
+                <p class="text-xs text-emerald-600 dark:text-emerald-400">{{ $workOrder->client->name }} — {{ $workOrder->device_brand }} {{ $workOrder->device_model }}</p>
+            </div>
+        </div>
+        <a href="{{ route('work_orders.show', $workOrder) }}" class="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:text-emerald-500">Ver orden</a>
+    </div>
+    @endif
+
     @if($cashRegister)
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2">
@@ -127,6 +140,9 @@
         <input type="hidden" name="card_amount" id="formCardAmount" value="">
         <input type="hidden" name="payment_reference" id="formPaymentReference" value="">
         <input type="hidden" name="preview" id="formPreview" value="">
+        @if($workOrder)
+        <input type="hidden" name="work_order_id" value="{{ $workOrder->id }}">
+        @endif
     </form>
 
     <div x-show="showCheckoutModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0" x-cloak>
@@ -372,6 +388,8 @@ function posApp() {
         previewSaleId: {{ $previewSaleId ?? 'null' }},
         topProducts: @json($topProducts),
         products: @json($products),
+        workOrder: @json($workOrder),
+        quoteItems: @json($quoteItems),
         paymentMethods: [
             { value: 'efectivo', label: 'Efectivo' },
             { value: 'tarjeta_transferencia', label: 'Tarjeta' },
@@ -477,6 +495,21 @@ function posApp() {
             this.showCheckoutModal = true;
         },
         init() {
+            // Pre-populate cart from quote items (cobro_orden)
+            if (this.workOrder && this.quoteItems && this.quoteItems.length > 0) {
+                this.quoteItems.forEach(qi => {
+                    this.cart.push({
+                        product_id: qi.product_id,
+                        type: qi.type,
+                        description: qi.description,
+                        quantity: qi.quantity,
+                        unit_price: parseFloat(qi.unit_price),
+                        tax_percentage: parseFloat(qi.tax_percentage || 0),
+                    });
+                });
+                // Auto-open checkout modal
+                this.$nextTick(() => this.openCheckoutModal(false));
+            }
             if (this.previewSaleId) {
                 this.loadPreview(this.previewSaleId);
             }

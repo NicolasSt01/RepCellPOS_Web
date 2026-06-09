@@ -26,6 +26,7 @@ class WorkOrder extends Model
         'unlock_pattern',
         'unlock_pin',
         'problem_description',
+        'images',
         'status',
         'priority',
         'timeline',
@@ -36,6 +37,7 @@ class WorkOrder extends Model
     {
         return [
             'timeline' => 'array',
+            'images' => 'array',
         ];
     }
 

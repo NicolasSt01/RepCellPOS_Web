@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\CashRegister;
 use App\Models\Product;
+use App\Models\Quote;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\WorkOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +16,7 @@ use Illuminate\View\View;
 
 class PosController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $tenant = Auth::user()->tenant;
 
@@ -53,7 +55,17 @@ class PosController extends Controller
 
         $previewSaleId = session()->pull('preview_sale_id');
 
-        return view('pos.index', compact('topProducts', 'products', 'cashRegister', 'tenant', 'previewSaleId'));
+        $workOrder = null;
+        $quoteItems = [];
+
+        if ($request->filled('work_order_id')) {
+            $workOrder = WorkOrder::with('quote.quoteItems')->find($request->work_order_id);
+            if ($workOrder && $workOrder->quote && $workOrder->quote->status === 'aprobada') {
+                $quoteItems = $workOrder->quote->quoteItems;
+            }
+        }
+
+        return view('pos.index', compact('topProducts', 'products', 'cashRegister', 'tenant', 'previewSaleId', 'workOrder', 'quoteItems'));
     }
 
     public function checkout(Request $request): RedirectResponse
@@ -70,6 +82,7 @@ class PosController extends Controller
             'items.*.tax_percentage' => 'numeric|min:0|max:100',
             'payment_method' => 'required|in:efectivo,tarjeta_transferencia,mixto',
             'payment_reference' => 'required_if:payment_method,tarjeta_transferencia|nullable|string',
+            'work_order_id' => 'nullable|exists:work_orders,id',
         ];
 
         if ($request->payment_method === 'efectivo') {
@@ -92,6 +105,15 @@ class PosController extends Controller
             return redirect()->route('pos.index')->with('error', 'No hay caja abierta. Abre la caja primero.');
         }
 
+        // Validate work order if cobro_orden
+        $workOrder = null;
+        if ($request->filled('work_order_id')) {
+            $workOrder = WorkOrder::with('quote')->find($request->work_order_id);
+            if (!$workOrder || !$workOrder->quote || $workOrder->quote->status !== 'aprobada') {
+                return redirect()->route('pos.index')->with('error', 'La cotización no está aprobada o no existe.');
+            }
+        }
+
         $productIds = collect($validated['items'])->whereNotNull('product_id')->pluck('product_id')->unique();
         $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
@@ -108,7 +130,7 @@ class PosController extends Controller
             }
         }
 
-        $sale = DB::transaction(function () use ($validated, $cashRegister, $tenant, $products) {
+        $sale = DB::transaction(function () use ($validated, $cashRegister, $tenant, $products, $workOrder) {
             $subtotal = 0;
             $taxTotal = 0;
 
@@ -147,8 +169,9 @@ class PosController extends Controller
             $sale = Sale::create([
                 'tenant_id' => $tenant->id,
                 'user_id' => Auth::id(),
+                'work_order_id' => $workOrder?->id,
                 'cash_register_id' => $cashRegister->id,
-                'type' => 'venta_directa',
+                'type' => $workOrder ? 'cobro_orden' : 'venta_directa',
                 'subtotal' => $subtotal,
                 'tax_total' => $taxTotal,
                 'discount' => 0,
@@ -179,6 +202,16 @@ class PosController extends Controller
                         $product->adjustStock($item['quantity'], 'salida', "Venta #{$sale->id}", $sale);
                     }
                 }
+            }
+
+            // If this is a cobro_orden, update work order status
+            if ($workOrder) {
+                $workOrder->update(['status' => 'en_reparacion']);
+                $workOrder->addTimelineEvent(
+                    'en_reparacion',
+                    Auth::user()->name,
+                    "Orden cobrada desde POS — Venta #{$sale->id}"
+                );
             }
 
             return $sale;

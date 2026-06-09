@@ -53,8 +53,18 @@ class QuoteItem extends Model
             $item->quote->recalculate();
         });
 
+        static::created(function ($item) {
+            if ($item->product_id && $item->quote->status === 'pendiente') {
+                $item->product->increment('reserved_stock', $item->quantity);
+            }
+        });
+
         static::deleted(function ($item) {
             $item->quote->recalculate();
+
+            if ($item->product_id && in_array($item->quote->status, ['pendiente', 'enviada'])) {
+                $item->product->decrement('reserved_stock', $item->quantity);
+            }
         });
     }
 }

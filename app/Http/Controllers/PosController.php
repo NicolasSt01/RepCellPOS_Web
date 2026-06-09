@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class PosController extends Controller
@@ -223,7 +224,45 @@ class PosController extends Controller
             return redirect()->route('pos.index')->with('success', "Venta #{$sale->id} registrada exitosamente.");
         }
 
+        $this->autoCancelAffectedQuotes($products);
+
         return redirect()->route('pos.index')->with('success', "Venta #{$sale->id} registrada exitosamente. Total: $" . number_format($sale->total, 2));
+    }
+
+    private function autoCancelAffectedQuotes(\Illuminate\Support\Collection $products): void
+    {
+        foreach ($products as $product) {
+            $product->refresh();
+            if ($product->reserved_stock <= $product->stock) {
+                continue;
+            }
+
+            $overReserved = $product->reserved_stock - $product->stock;
+
+            $affectedQuotes = Quote::whereIn('status', ['pendiente', 'enviada'])
+                ->whereHas('quoteItems', fn($q) => $q->where('product_id', $product->id))
+                ->orderBy('created_at')
+                ->get();
+
+            $toRelease = 0;
+            foreach ($affectedQuotes as $quote) {
+                $reservedQty = $quote->quoteItems()->where('product_id', $product->id)->sum('quantity');
+                $toRelease += $reservedQty;
+
+                $quote->cancel(
+                    "Cancelación automática — El producto \"{$product->name}\" ya no tiene suficiente stock para completar esta cotización."
+                );
+                $quote->workOrder->addTimelineEvent(
+                    'cancelada',
+                    'Sistema',
+                    "Cotización cancelada automáticamente por falta de stock de \"{$product->name}\"."
+                );
+
+                if ($toRelease >= $overReserved) {
+                    break;
+                }
+            }
+        }
     }
 
     public function print(Sale $sale): View

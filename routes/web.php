@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/work_orders/{work_order}/add_note', [WorkOrderController::class, 'addNote'])->name('work_orders.add_note');
     Route::post('/work_orders/{work_order}/assign_technician', [WorkOrderController::class, 'assignTechnician'])->name('work_orders.assign_technician');
     Route::post('/work_orders/{work_order}/unassign_technician', [WorkOrderController::class, 'unassignTechnician'])->name('work_orders.unassign_technician');
+    Route::post('/work_orders/{work_order}/images', [WorkOrderController::class, 'addImages'])->name('work_orders.images.store');
 
     Route::resource('categories', CategoryController::class)->except(['show']);
 

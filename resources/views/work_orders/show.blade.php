@@ -83,6 +83,79 @@
                 </div>
             </div>
 
+            @php $r2 = app(\App\Services\R2StorageService::class); @endphp
+            <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">
+                <div class="p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Fotos del Equipo</h2>
+
+                    @if($workOrder->images && count($workOrder->images) > 0)
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                        @foreach($workOrder->images as $path)
+                        <a href="{{ $r2->getUrl($path) }}" target="_blank" rel="noopener noreferrer"
+                            class="block aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 ring-1 ring-gray-200 dark:ring-gray-600 hover:ring-indigo-500 transition-all">
+                            <img src="{{ $r2->getUrl($path) }}"
+                                alt="Foto del equipo"
+                                class="w-full h-full object-cover"
+                                loading="lazy">
+                        </a>
+                        @endforeach
+                    </div>
+                    @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Aún no se han agregado fotos de este equipo.</p>
+                    @endif
+
+                    <form method="POST" action="{{ route('work_orders.images.store', $workOrder) }}"
+                        enctype="multipart/form-data" class="border-t border-gray-200 dark:border-gray-700 pt-4"
+                        x-data="imageUploader()">
+                        @csrf
+                        <div class="space-y-3">
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Agregar más fotos</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Toma fotos durante la reparación para mostrarle al cliente el estado de su equipo. 
+                                Máximo 5 fotos por carga.
+                            </p>
+
+                            <div @click="$refs.fileInput.click()"
+                                @dragover.prevent="$el.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20')"
+                                @dragleave.prevent="$el.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20')"
+                                @drop.prevent="$el.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20'); handleDrop($event)"
+                                class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-indigo-400 transition-colors">
+                                <svg class="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 text-center">
+                                    Arrastra las fotos aquí o <span class="text-indigo-600 font-medium">selecciona archivos</span>
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">JPG, PNG o WebP — Max 5MB c/u</p>
+                                <input type="file" name="images[]" multiple accept="image/jpeg,image/png,image/webp"
+                                    x-ref="fileInput" @change="handleFiles($event)" class="hidden">
+                            </div>
+
+                            <template x-if="previews.length > 0">
+                                <div class="grid grid-cols-5 gap-2">
+                                    <template x-for="(preview, index) in previews" :key="index">
+                                        <div class="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 ring-1 ring-gray-200 dark:ring-gray-600">
+                                            <img :src="preview" class="w-full h-full object-cover">
+                                            <button type="button" @click="removeFile(index)"
+                                                class="absolute top-0.5 right-0.5 rounded-full bg-red-500 text-white p-0.5 shadow hover:bg-red-600 transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <button type="submit" x-show="previews.length > 0"
+                                class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                                Subir <span x-text="previews.length"></span> foto(s)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">
                 <div class="p-6">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Timeline</h2>
@@ -312,3 +385,51 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('imageUploader', () => ({
+        previews: [],
+        files: [],
+        handleFiles(event) {
+            const newFiles = Array.from(event.target.files);
+            const remaining = 5 - this.files.length;
+            const toAdd = newFiles.slice(0, remaining);
+            toAdd.forEach(file => {
+                if (!file.type.match(/image\/(jpeg|png|webp)/)) return;
+                if (file.size > 5 * 1024 * 1024) return;
+                this.files.push(file);
+                const reader = new FileReader();
+                reader.onload = (e) => this.previews.push(e.target.result);
+                reader.readAsDataURL(file);
+            });
+            if (newFiles.length > remaining) {
+                alert('Solo puedes subir hasta 5 fotos por carga.');
+            }
+        },
+        handleDrop(event) {
+            const newFiles = Array.from(event.dataTransfer.files);
+            const remaining = 5 - this.files.length;
+            const toAdd = newFiles.slice(0, remaining);
+            toAdd.forEach(file => {
+                if (!file.type.match(/image\/(jpeg|png|webp)/)) return;
+                if (file.size > 5 * 1024 * 1024) return;
+                this.files.push(file);
+                const reader = new FileReader();
+                reader.onload = (e) => this.previews.push(e.target.result);
+                reader.readAsDataURL(file);
+            });
+            if (newFiles.length > remaining) {
+                alert('Solo puedes subir hasta 5 fotos por carga.');
+            }
+        },
+        removeFile(index) {
+            this.files.splice(index, 1);
+            this.previews.splice(index, 1);
+            this.$refs.fileInput.value = '';
+        },
+    }));
+});
+</script>
+@endpush

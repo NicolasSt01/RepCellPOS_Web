@@ -80,7 +80,6 @@ class WorkOrderTest extends TestCase
             'unlock_pattern' => '12345',
             'unlock_pin' => '0000',
             'problem_description' => 'Pantalla rota',
-            // Simulating image upload
             'images' => [
                 UploadedFile::fake()->image('photo1.jpg')
             ]
@@ -100,5 +99,129 @@ class WorkOrderTest extends TestCase
         $this->assertEquals('en_espera', $workOrder->status);
         $this->assertNotNull($workOrder->images);
         $this->assertCount(1, $workOrder->images);
+    }
+
+    public function test_can_add_images_to_existing_work_order(): void
+    {
+        $workOrder = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'client_id' => $this->client->id,
+            'user_id' => $this->user->id,
+            'images' => ['work_orders/2026/06/old-photo.jpg'],
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('work_orders.images.store', $workOrder), [
+            'images' => [
+                UploadedFile::fake()->image('new1.jpg'),
+                UploadedFile::fake()->image('new2.png'),
+            ],
+        ]);
+
+        $response->assertRedirect(route('work_orders.show', $workOrder));
+        $response->assertSessionHas('success');
+
+        $workOrder->refresh();
+        $this->assertCount(3, $workOrder->images);
+        $this->assertEquals('work_orders/2026/06/old-photo.jpg', $workOrder->images[0]);
+
+        $this->assertDatabaseHas('work_orders', [
+            'id' => $workOrder->id,
+        ]);
+
+        $events = $workOrder->timeline;
+        $lastEvent = end($events);
+        $this->assertStringContainsString('2 foto(s)', $lastEvent['comentario']);
+        $this->assertEquals($this->user->name, $lastEvent['usuario']);
+    }
+
+    public function test_add_images_validates_max_five(): void
+    {
+        $workOrder = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'client_id' => $this->client->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        $images = [];
+        for ($i = 0; $i < 6; $i++) {
+            $images[] = UploadedFile::fake()->image("photo{$i}.jpg");
+        }
+
+        $response = $this->actingAs($this->user)->post(route('work_orders.images.store', $workOrder), [
+            'images' => $images,
+        ]);
+
+        $response->assertSessionHasErrors('images');
+    }
+
+    public function test_add_images_requires_images(): void
+    {
+        $workOrder = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'client_id' => $this->client->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('work_orders.images.store', $workOrder), [
+            'images' => [],
+        ]);
+
+        $response->assertSessionHasErrors('images');
+    }
+
+    public function test_add_images_merges_with_existing_empty_images(): void
+    {
+        $workOrder = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'client_id' => $this->client->id,
+            'user_id' => $this->user->id,
+            'images' => null,
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('work_orders.images.store', $workOrder), [
+            'images' => [
+                UploadedFile::fake()->image('first.jpg'),
+            ],
+        ]);
+
+        $response->assertRedirect(route('work_orders.show', $workOrder));
+        $response->assertSessionHas('success');
+
+        $workOrder->refresh();
+        $this->assertCount(1, $workOrder->images);
+    }
+
+    public function test_show_page_displays_image_gallery(): void
+    {
+        $workOrder = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'client_id' => $this->client->id,
+            'user_id' => $this->user->id,
+            'images' => ['work_orders/test/photo1.jpg'],
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('work_orders.show', $workOrder));
+
+        $response->assertOk();
+        $response->assertSee('Fotos del Equipo');
+        $response->assertSee('Agregar más fotos');
+        $response->assertSee(route('r2.serve', ['path' => 'work_orders/test/photo1.jpg']), false);
+    }
+
+    public function test_show_page_shows_upload_form_when_no_images(): void
+    {
+        $workOrder = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'client_id' => $this->client->id,
+            'user_id' => $this->user->id,
+            'images' => null,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('work_orders.show', $workOrder));
+
+        $response->assertOk();
+        $response->assertSee('Fotos del Equipo');
+        $response->assertSee('Aún no se han agregado fotos');
+        $response->assertSee('Agregar más fotos');
     }
 }

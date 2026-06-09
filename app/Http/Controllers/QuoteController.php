@@ -8,6 +8,7 @@ use App\Models\QuoteItem;
 use App\Models\WorkOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class QuoteController extends Controller
@@ -35,6 +36,21 @@ class QuoteController extends Controller
             'unit_price' => 'required|numeric|min:0',
             'tax_percentage' => 'numeric|min:0|max:100',
         ]);
+
+        if (!empty($validated['product_id'])) {
+            $product = Product::findOrFail($validated['product_id']);
+
+            $alreadyReservedForThisQuote = QuoteItem::where('product_id', $product->id)
+                ->where('quote_id', $quote->id)
+                ->sum('quantity');
+
+            $availableForThisQuote = $product->stock - ($product->reserved_stock - $alreadyReservedForThisQuote);
+
+            if ($validated['quantity'] > $availableForThisQuote) {
+                return redirect()->route('quotes.show', $quote->workOrder)
+                    ->with('error', "Stock insuficiente para \"{$product->name}\". Disponible: {$availableForThisQuote}, solicitado: {$validated['quantity']}.");
+            }
+        }
 
         QuoteItem::create(array_merge($validated, [
             'tenant_id' => $quote->tenant_id,
@@ -66,7 +82,12 @@ class QuoteController extends Controller
 
     public function approve(Quote $quote): RedirectResponse
     {
-        $quote->approve();
+        try {
+            $quote->approve();
+        } catch (\RuntimeException $e) {
+            return redirect()->route('quotes.show', $quote->workOrder)
+                ->with('error', $e->getMessage());
+        }
 
         return redirect()->route('work_orders.show', $quote->workOrder)
             ->with('success', 'Cotización aprobada. Orden en reparación.');

@@ -23,6 +23,7 @@ class Product extends Model
         'image_url',
         'type',
         'stock',
+        'reserved_stock',
         'min_stock',
         'purchase_price',
         'sale_price',
@@ -38,6 +39,7 @@ class Product extends Model
     {
         return [
             'stock' => 'integer',
+            'reserved_stock' => 'integer',
             'min_stock' => 'integer',
             'purchase_price' => 'decimal:2',
             'sale_price' => 'decimal:2',
@@ -45,6 +47,18 @@ class Product extends Model
             'tax_percentage' => 'decimal:2',
             'is_active' => 'boolean',
         ];
+    }
+
+    protected $appends = ['available_stock'];
+
+    public function getAvailableStockAttribute(): int
+    {
+        return $this->stock - $this->reserved_stock;
+    }
+
+    public function availableStock(): int
+    {
+        return $this->stock - $this->reserved_stock;
     }
 
     public function category(): BelongsTo

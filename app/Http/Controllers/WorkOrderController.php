@@ -341,6 +341,33 @@ class WorkOrderController extends Controller
             ->with('success', "Técnico {$technician->name} asignado a la orden.");
     }
 
+    public function addImages(Request $request, WorkOrder $workOrder, R2StorageService $r2): RedirectResponse
+    {
+        $request->validate([
+            'images' => 'required|array|max:5',
+            'images.*' => 'image|mimes:jpeg,png,webp|max:5120',
+        ]);
+
+        $newPaths = [];
+        foreach ($request->file('images') as $image) {
+            $newPaths[] = $r2->upload($image, 'work_orders');
+        }
+
+        $existingImages = $workOrder->images ?? [];
+        $workOrder->update([
+            'images' => array_merge($existingImages, $newPaths),
+        ]);
+
+        $workOrder->addTimelineEvent(
+            $workOrder->status,
+            Auth::user()->name,
+            'Se agregaron ' . count($newPaths) . ' foto(s) al expediente del equipo'
+        );
+
+        return redirect()->route('work_orders.show', $workOrder)
+            ->with('success', count($newPaths) . ' foto(s) agregada(s) al expediente del equipo.');
+    }
+
     public function unassignTechnician(WorkOrder $workOrder): RedirectResponse
     {
         $technician = $workOrder->assignedTechnician;

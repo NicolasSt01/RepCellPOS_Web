@@ -52,7 +52,7 @@
                                 class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left relative">
                                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100" x-text="product.name"></p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'$' + parseFloat(product.sale_price).toFixed(2)"></p>
-                                <p class="text-xs" :class="product.stock > 0 ? 'text-gray-400' : 'text-red-500 font-semibold'" x-text="product.stock > 0 ? 'Stock: ' + product.stock : 'Sin stock'"></p>
+                                <p class="text-xs" :class="product.available_stock > 0 ? 'text-gray-400' : 'text-red-500 font-semibold'" x-text="product.available_stock > 0 ? 'Stock: ' + product.available_stock : 'Sin stock'"></p>
                             </button>
                         </template>
                         <template x-if="filteredProducts.length === 0">
@@ -413,7 +413,7 @@ function posApp() {
         },
         getStock(productId) {
             const p = this.products.find(p => p.id === productId);
-            return p ? p.stock : 0;
+            return p ? p.available_stock : 0;
         },
         getCartQty(productId) {
             return this.cart.filter(i => i.product_id === productId).reduce((sum, i) => sum + i.quantity, 0);
@@ -421,8 +421,8 @@ function posApp() {
         addToCart(product) {
             const existing = this.cart.find(item => item.product_id === product.id);
             const currentQty = existing ? existing.quantity : 0;
-            if (product.type === 'producto' && currentQty >= product.stock) {
-                this.stockError = 'Stock insuficiente para "' + product.name + '". Disponible: ' + product.stock;
+            if (product.type === 'producto' && currentQty >= product.available_stock) {
+                this.stockError = 'Stock insuficiente para "' + product.name + '". Disponible: ' + product.available_stock;
                 this.showStockError = true;
                 return;
             }
@@ -444,8 +444,8 @@ function posApp() {
             if (newQty > 0) {
                 if (delta > 0 && item.product_id) {
                     const product = this.products.find(p => p.id === item.product_id);
-                    if (product && product.type === 'producto' && newQty > product.stock) {
-                        this.stockError = 'Stock insuficiente para "' + item.description + '". Disponible: ' + product.stock;
+                    if (product && product.type === 'producto' && newQty > product.available_stock) {
+                        this.stockError = 'Stock insuficiente para "' + item.description + '". Disponible: ' + product.available_stock;
                         this.showStockError = true;
                         return;
                     }
@@ -460,8 +460,8 @@ function posApp() {
             for (const item of this.cart) {
                 if (item.product_id) {
                     const product = this.products.find(p => p.id === item.product_id);
-                    if (product && product.type === 'producto' && item.quantity > product.stock) {
-                        this.stockError = 'Stock insuficiente para "' + item.description + '". Disponible: ' + product.stock + ', solicitado: ' + item.quantity;
+                    if (product && product.type === 'producto' && item.quantity > product.available_stock) {
+                        this.stockError = 'Stock insuficiente para "' + item.description + '". Disponible: ' + product.available_stock + ', solicitado: ' + item.quantity;
                         this.showStockError = true;
                         return;
                     }

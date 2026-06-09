@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Permission;
 
 class WorkOrderController extends Controller
 {
@@ -49,7 +50,7 @@ class WorkOrderController extends Controller
 
         $workOrders = $query->paginate(15)->withQueryString();
 
-        $technicians = User::whereHas('roles', fn($q) => $q->whereIn('name', ['Tecnico', 'Admin Tenant']))->orderBy('name')->get();
+        $technicians = $this->getAssignableUsers();
 
         return view('work_orders.index', compact('workOrders', 'status', 'priority', 'search', 'technicians'));
     }
@@ -177,7 +178,7 @@ class WorkOrderController extends Controller
     public function show(WorkOrder $workOrder): View
     {
         $workOrder->load(['client', 'user', 'assignedTechnician', 'quote.quoteItems']);
-        $technicians = User::whereHas('roles', fn($q) => $q->whereIn('name', ['Tecnico', 'Admin Tenant']))->orderBy('name')->get();
+        $technicians = $this->getAssignableUsers();
         return view('work_orders.show', compact('workOrder', 'technicians'));
     }
 
@@ -281,7 +282,7 @@ class WorkOrderController extends Controller
 
         $workOrders = $query->latest()->paginate(25)->withQueryString();
 
-        $technicians = User::whereHas('roles', fn($q) => $q->whereIn('name', ['Tecnico', 'Admin Tenant']))->orderBy('name')->get();
+        $technicians = $this->getAssignableUsers();
 
         $summary = WorkOrder::selectRaw("
             COUNT(*) as total,
@@ -320,6 +321,19 @@ class WorkOrderController extends Controller
 
         return redirect()->route('work_orders.show', $workOrder)
             ->with('success', 'Anotación agregada exitosamente.');
+    }
+
+    private function getAssignableUsers()
+    {
+        $workOrderPerms = Permission::where('name', 'like', 'work_orders.%')->pluck('id');
+
+        return User::where('tenant_id', auth()->user()->tenant_id)
+            ->where(function ($q) use ($workOrderPerms) {
+                $q->whereHas('roles', fn($q) => $q->whereIn('name', ['Tecnico', 'Admin Tenant']))
+                  ->orWhereHas('roles.permissions', fn($q) => $q->whereIn('permissions.id', $workOrderPerms));
+            })
+            ->orderBy('name')
+            ->get();
     }
 
     public function assignTechnician(Request $request, WorkOrder $workOrder): RedirectResponse

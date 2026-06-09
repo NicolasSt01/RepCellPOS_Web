@@ -125,8 +125,10 @@ class PosController extends Controller
                     return redirect()->route('pos.index')->with('error', "Producto no encontrado: {$item['description']}.");
                 }
                 $cartQuantity = collect($validated['items'])->where('product_id', $item['product_id'])->sum('quantity');
-                if ($product->stock < $cartQuantity) {
-                    return redirect()->route('pos.index')->with('error', "Stock insuficiente para \"{$product->name}\". Disponible: {$product->stock}, solicitado: {$cartQuantity}.");
+                $availableStock = $product->availableStock();
+                if ($availableStock < $cartQuantity) {
+                    $reservedInfo = $product->reserved_stock > 0 ? " ({$product->reserved_stock} reservados en cotizaciones)" : '';
+                    return redirect()->route('pos.index')->with('error', "Stock insuficiente para \"{$product->name}\". Disponible: {$availableStock}{$reservedInfo}, solicitado: {$cartQuantity}.");
                 }
             }
         }
@@ -200,7 +202,12 @@ class PosController extends Controller
                 if ($item['type'] === 'producto' && isset($item['product_id'])) {
                     $product = Product::find($item['product_id']);
                     if ($product) {
-                        $product->adjustStock($item['quantity'], 'salida', "Venta #{$sale->id}", $sale);
+                        $reference = $workOrder?->quote ?? $sale;
+                        $notes = $workOrder ? "Cotización #{$workOrder->quote->id} — OT {$workOrder->work_order_number}" : "Venta #{$sale->id}";
+                        $product->adjustStock($item['quantity'], 'salida', $notes, $reference);
+                        if ($workOrder) {
+                            $product->decrement('reserved_stock', $item['quantity']);
+                        }
                     }
                 }
             }
@@ -233,33 +240,24 @@ class PosController extends Controller
     {
         foreach ($products as $product) {
             $product->refresh();
-            if ($product->reserved_stock <= $product->stock) {
-                continue;
-            }
-
-            $overReserved = $product->reserved_stock - $product->stock;
 
             $affectedQuotes = Quote::whereIn('status', ['pendiente', 'enviada'])
                 ->whereHas('quoteItems', fn($q) => $q->where('product_id', $product->id))
                 ->orderBy('created_at')
                 ->get();
 
-            $toRelease = 0;
             foreach ($affectedQuotes as $quote) {
-                $reservedQty = $quote->quoteItems()->where('product_id', $product->id)->sum('quantity');
-                $toRelease += $reservedQty;
+                $neededQty = $quote->quoteItems()->where('product_id', $product->id)->sum('quantity');
 
-                $quote->cancel(
-                    "Cancelación automática — El producto \"{$product->name}\" ya no tiene suficiente stock para completar esta cotización."
-                );
-                $quote->workOrder->addTimelineEvent(
-                    'cancelada',
-                    'Sistema',
-                    "Cotización cancelada automáticamente por falta de stock de \"{$product->name}\"."
-                );
-
-                if ($toRelease >= $overReserved) {
-                    break;
+                if ($product->stock < $neededQty) {
+                    $quote->cancel(
+                        "Cancelación automática — El producto \"{$product->name}\" ya no tiene suficiente stock para completar esta cotización (stock: {$product->stock}, necesario: {$neededQty})."
+                    );
+                    $quote->workOrder->addTimelineEvent(
+                        'cancelada',
+                        'Sistema',
+                        "Cotización cancelada automáticamente por falta de stock de \"{$product->name}\" tras una venta directa."
+                    );
                 }
             }
         }

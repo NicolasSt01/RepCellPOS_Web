@@ -64,7 +64,14 @@
                                 <div class="min-w-0 flex-1">
                                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" x-text="product.name"></p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'$' + parseFloat(product.sale_price).toFixed(2)"></p>
-                                    <p class="text-xs" :class="product.available_stock > 0 ? 'text-gray-400' : 'text-red-500 font-semibold'" x-text="product.available_stock > 0 ? 'Stock: ' + product.available_stock : 'Sin stock'"></p>
+                                    <div class="flex items-center gap-1">
+                                        <template x-if="product.reserved_stock > 0">
+                                            <p class="text-xs" :class="product.available_stock > 0 ? 'text-amber-500' : 'text-red-500 font-semibold'" x-text="product.available_stock > 0 ? 'Disp: ' + product.available_stock + ' (' + product.reserved_stock + ' apartados)' : 'Apartados: ' + product.reserved_stock"></p>
+                                        </template>
+                                        <template x-if="product.reserved_stock <= 0">
+                                            <p class="text-xs" :class="product.stock > 0 ? 'text-gray-400' : 'text-red-500 font-semibold'" x-text="product.stock > 0 ? 'Stock: ' + product.stock : 'Sin stock'"></p>
+                                        </template>
+                                    </div>
                                 </div>
                             </button>
                         </template>

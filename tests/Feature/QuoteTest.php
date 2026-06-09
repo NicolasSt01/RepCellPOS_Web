@@ -464,7 +464,7 @@ class QuoteTest extends TestCase
         $this->workOrder->refresh();
     }
 
-    public function test_adding_product_reserves_stock(): void
+    public function test_adding_product_does_not_reserve_until_approved(): void
     {
         $product = Product::create([
             'tenant_id' => $this->tenant->id,
@@ -492,14 +492,52 @@ class QuoteTest extends TestCase
 
         $product->refresh();
         $this->assertEquals(4, $product->stock);
-        $this->assertEquals(2, $product->reserved_stock);
-        $this->assertEquals(2, $product->availableStock());
+        $this->assertEquals(0, $product->reserved_stock);
+        $this->assertEquals(4, $product->availableStock());
 
         $quote->refresh();
         $this->assertEquals(1, $quote->quoteItems()->count());
     }
 
-    public function test_removing_product_releases_reserved_stock(): void
+    public function test_approving_quote_reserves_stock(): void
+    {
+        $product = Product::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Bocina',
+            'type' => 'producto',
+            'purchase_price' => 100,
+            'sale_price' => 200,
+            'stock' => 4,
+            'reserved_stock' => 0,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->user)->get(route('quotes.show', $this->workOrder));
+        $this->workOrder->refresh();
+        $quote = $this->workOrder->quote;
+
+        $this->actingAs($this->user)->post(route('quotes.add_item', $quote), [
+            'product_id' => $product->id,
+            'type' => 'producto',
+            'description' => $product->name,
+            'quantity' => 2,
+            'unit_price' => $product->sale_price,
+            'tax_percentage' => 0,
+        ]);
+
+        $this->actingAs($this->user)->post(route('quotes.send', $quote));
+        $this->actingAs($this->user)->post(route('quotes.approve', $quote));
+
+        $product->refresh();
+        $this->assertEquals(4, $product->stock);
+        $this->assertEquals(2, $product->reserved_stock);
+        $this->assertEquals(2, $product->availableStock());
+
+        $quote->refresh();
+        $this->assertEquals('aprobada', $quote->status);
+    }
+
+    public function test_removing_item_from_pending_quote_does_not_affect_stock(): void
     {
         $product = Product::create([
             'tenant_id' => $this->tenant->id,
@@ -531,6 +569,45 @@ class QuoteTest extends TestCase
 
         $product->refresh();
         $this->assertEquals(4, $product->stock);
+        $this->assertEquals(0, $product->reserved_stock);
+    }
+
+    public function test_removing_item_from_approved_quote_releases_reservation(): void
+    {
+        $product = Product::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Bocina',
+            'type' => 'producto',
+            'purchase_price' => 100,
+            'sale_price' => 200,
+            'stock' => 4,
+            'reserved_stock' => 0,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->user)->get(route('quotes.show', $this->workOrder));
+        $this->workOrder->refresh();
+        $quote = $this->workOrder->quote;
+
+        $this->actingAs($this->user)->post(route('quotes.add_item', $quote), [
+            'product_id' => $product->id,
+            'type' => 'producto',
+            'description' => $product->name,
+            'quantity' => 2,
+            'unit_price' => $product->sale_price,
+            'tax_percentage' => 0,
+        ]);
+
+        $this->actingAs($this->user)->post(route('quotes.send', $quote));
+        $this->actingAs($this->user)->post(route('quotes.approve', $quote));
+
+        $product->refresh();
+        $this->assertEquals(2, $product->reserved_stock);
+
+        $item = $quote->quoteItems()->where('product_id', $product->id)->first();
+        $this->actingAs($this->user)->delete(route('quotes.remove_item', $item));
+
+        $product->refresh();
         $this->assertEquals(0, $product->reserved_stock);
         $this->assertEquals(4, $product->availableStock());
     }
@@ -568,7 +645,57 @@ class QuoteTest extends TestCase
         ]);
     }
 
-    public function test_approving_quote_consumes_stock_and_records_kardex(): void
+    public function test_approving_quote_reserves_stock_not_consumes(): void
+    {
+        $product = Product::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Pantalla',
+            'type' => 'producto',
+            'purchase_price' => 500,
+            'sale_price' => 800,
+            'stock' => 5,
+            'reserved_stock' => 0,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->user)->get(route('quotes.show', $this->workOrder));
+        $this->workOrder->refresh();
+        $quote = $this->workOrder->quote;
+
+        $this->actingAs($this->user)->post(route('quotes.add_item', $quote), [
+            'product_id' => $product->id,
+            'type' => 'producto',
+            'description' => $product->name,
+            'quantity' => 2,
+            'unit_price' => $product->sale_price,
+            'tax_percentage' => 0,
+        ]);
+
+        $this->actingAs($this->user)->post(route('quotes.send', $quote));
+        $this->actingAs($this->user)->post(route('quotes.approve', $quote));
+
+        // Approval only reserves, does NOT consume stock yet
+        $product->refresh();
+        $this->assertEquals(5, $product->stock);
+        $this->assertEquals(2, $product->reserved_stock);
+        $this->assertEquals(3, $product->availableStock());
+
+        // No kardex movement yet — that happens at POS payment
+        $this->assertDatabaseMissing('kardex_movements', [
+            'product_id' => $product->id,
+            'type' => 'salida',
+            'reference_type' => 'App\Models\Quote',
+            'reference_id' => $quote->id,
+        ]);
+
+        $quote->refresh();
+        $this->assertEquals('aprobada', $quote->status);
+
+        $this->workOrder->refresh();
+        $this->assertEquals('cotizacion_aprobada', $this->workOrder->status);
+    }
+
+    public function test_pos_payment_of_approved_quote_consumes_stock_and_records_kardex(): void
     {
         $product = Product::create([
             'tenant_id' => $this->tenant->id,
@@ -598,6 +725,26 @@ class QuoteTest extends TestCase
         $this->actingAs($this->user)->post(route('quotes.approve', $quote));
 
         $product->refresh();
+        $this->assertEquals(2, $product->reserved_stock);
+
+        // Pay via POS (cobro_orden)
+        $response = $this->actingAs($this->user)->post(route('pos.checkout'), [
+            'work_order_id' => $this->workOrder->id,
+            'items' => [[
+                'product_id' => $product->id,
+                'type' => 'producto',
+                'description' => $product->name,
+                'quantity' => 2,
+                'unit_price' => $product->sale_price,
+                'tax_percentage' => 0,
+            ]],
+            'payment_method' => 'efectivo',
+            'amount_received' => 2000,
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $product->refresh();
         $this->assertEquals(3, $product->stock);
         $this->assertEquals(0, $product->reserved_stock);
 
@@ -609,11 +756,8 @@ class QuoteTest extends TestCase
             'reference_id' => $quote->id,
         ]);
 
-        $quote->refresh();
-        $this->assertEquals('aprobada', $quote->status);
-
         $this->workOrder->refresh();
-        $this->assertEquals('cotizacion_aprobada', $this->workOrder->status);
+        $this->assertEquals('en_reparacion', $this->workOrder->status);
     }
 
     public function test_approving_quote_with_insufficient_stock_fails(): void
@@ -642,7 +786,7 @@ class QuoteTest extends TestCase
             'tax_percentage' => 0,
         ]);
 
-        // Another quote reserves the same product, reducing available stock
+        // Another quote is APPROVED first, reserving the same product
         $wo2 = WorkOrder::factory()->create([
             'tenant_id' => $this->tenant->id,
             'client_id' => $this->workOrder->client_id,
@@ -660,14 +804,16 @@ class QuoteTest extends TestCase
             'unit_price' => $product->sale_price,
             'tax_percentage' => 0,
         ]);
-        // Now reserved=2+2=4, stock=2, available=-2
+        $this->actingAs($this->user)->post(route('quotes.send', $q2));
+        $this->actingAs($this->user)->post(route('quotes.approve', $q2));
+        // Now reserved_stock=2, stock=2, available_stock=0
 
         $this->actingAs($this->user)->post(route('quotes.send', $quote));
         $response = $this->actingAs($this->user)->post(route('quotes.approve', $quote));
         $response->assertSessionHas('error');
     }
 
-    public function test_rejecting_quote_releases_reserved_stock(): void
+    public function test_rejecting_approved_quote_releases_reserved_stock(): void
     {
         $product = Product::create([
             'tenant_id' => $this->tenant->id,
@@ -692,6 +838,9 @@ class QuoteTest extends TestCase
             'unit_price' => $product->sale_price,
             'tax_percentage' => 0,
         ]);
+
+        $this->actingAs($this->user)->post(route('quotes.send', $quote));
+        $this->actingAs($this->user)->post(route('quotes.approve', $quote));
 
         $product->refresh();
         $this->assertEquals(2, $product->reserved_stock);
@@ -712,7 +861,7 @@ class QuoteTest extends TestCase
         $this->assertEquals('cancelada', $this->workOrder->status);
     }
 
-    public function test_pos_checkout_respects_physical_stock(): void
+    public function test_pos_checkout_respects_available_stock(): void
     {
         $product = Product::create([
             'tenant_id' => $this->tenant->id,
@@ -721,11 +870,11 @@ class QuoteTest extends TestCase
             'purchase_price' => 100,
             'sale_price' => 200,
             'stock' => 3,
-            'reserved_stock' => 2, // reserved by another quote
+            'reserved_stock' => 2, // reserved by an approved quote
             'is_active' => true,
         ]);
 
-        // physical stock = 3, trying to buy 4 should fail
+        // available_stock = 3 - 2 = 1, trying to buy 4 should fail
         $response = $this->actingAs($this->user)->post(route('pos.checkout'), [
             'items' => [[
                 'product_id' => $product->id,
@@ -743,7 +892,7 @@ class QuoteTest extends TestCase
         $response->assertSessionMissing('success');
     }
 
-    public function test_pos_sale_auto_cancels_quotes_when_stock_insufficient(): void
+    public function test_pos_sale_auto_cancels_pending_quotes_when_stock_insufficient(): void
     {
         $product = Product::create([
             'tenant_id' => $this->tenant->id,
@@ -756,7 +905,7 @@ class QuoteTest extends TestCase
             'is_active' => true,
         ]);
 
-        // Create a quote that reserves 2 units
+        // Create a pending quote (does NOT reserve stock)
         $this->actingAs($this->user)->get(route('quotes.show', $this->workOrder));
         $this->workOrder->refresh();
         $quote = $this->workOrder->quote;
@@ -771,9 +920,9 @@ class QuoteTest extends TestCase
         ]);
 
         $product->refresh();
-        $this->assertEquals(2, $product->reserved_stock);
+        $this->assertEquals(0, $product->reserved_stock); // Pending = no reservation
 
-        // Sell 3 units via POS — stock becomes 1, reserved is 2 → not enough
+        // Sell 3 units via POS — stock becomes 1, quote needs 2 → auto-cancel
         $response = $this->actingAs($this->user)->post(route('pos.checkout'), [
             'items' => [[
                 'product_id' => $product->id,
@@ -792,7 +941,7 @@ class QuoteTest extends TestCase
         $product->refresh();
         $this->assertEquals(1, $product->stock);
 
-        // The quote should have been auto-cancelled
+        // The pending quote should have been auto-cancelled
         $quote->refresh();
         $this->assertEquals('rechazada', $quote->status);
         $this->assertNotNull($quote->cancellation_reason);

@@ -54,15 +54,13 @@ class QuoteItem extends Model
         });
 
         static::created(function ($item) {
-            if ($item->product_id && $item->quote->status === 'pendiente') {
-                $item->product->increment('reserved_stock', $item->quantity);
-            }
+            // No se reserva stock en pendiente/enviada — primero que llega, primero que se lleva
         });
 
         static::deleted(function ($item) {
             $item->quote->recalculate();
 
-            if ($item->product_id && in_array($item->quote->status, ['pendiente', 'enviada'])) {
+            if ($item->product_id && $item->quote->status === 'aprobada') {
                 $item->product->decrement('reserved_stock', $item->quantity);
             }
         });

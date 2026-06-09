@@ -40,15 +40,11 @@ class QuoteController extends Controller
         if (!empty($validated['product_id'])) {
             $product = Product::findOrFail($validated['product_id']);
 
-            $alreadyReservedForThisQuote = QuoteItem::where('product_id', $product->id)
-                ->where('quote_id', $quote->id)
-                ->sum('quantity');
+            $availableStock = $product->availableStock();
 
-            $availableForThisQuote = $product->stock - ($product->reserved_stock - $alreadyReservedForThisQuote);
-
-            if ($validated['quantity'] > $availableForThisQuote) {
+            if ($validated['quantity'] > $availableStock) {
                 return redirect()->route('quotes.show', $quote->workOrder)
-                    ->with('error', "Stock insuficiente para \"{$product->name}\". Disponible: {$availableForThisQuote}, solicitado: {$validated['quantity']}.");
+                    ->with('error', "Stock insuficiente para \"{$product->name}\". Disponible: {$availableStock}, solicitado: {$validated['quantity']}. El stock se reserva hasta que el cliente apruebe la cotización.");
             }
         }
 

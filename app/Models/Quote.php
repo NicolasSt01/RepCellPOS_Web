@@ -109,24 +109,26 @@ class Quote extends Model
                 if ($item->product_id && $item->product) {
                     if ($item->product->availableStock() < $item->quantity) {
                         throw new \RuntimeException(
-                            "Stock insuficiente para {$item->product->name}. Disponible: {$item->product->availableStock()}, requerido: {$item->quantity}."
+                            "Stock insuficiente para {$item->product->name}. Disponible: {$item->product->availableStock()}, requerido: {$item->quantity}. Otro cliente o venta pudo haber consumido el stock mientras la cotización estaba pendiente."
                         );
                     }
                 }
             }
 
-            $this->consumeStock();
+            $this->reserveStock();
 
             $this->update(['status' => 'aprobada']);
             $this->workOrder->update(['status' => 'cotizacion_aprobada']);
-            $this->workOrder->addTimelineEvent('cotizacion_aprobada', auth()->user()->name, 'Cotización aprobada por el cliente');
+            $this->workOrder->addTimelineEvent('cotizacion_aprobada', auth()->user()->name, 'Cotización aprobada por el cliente — stock reservado');
         });
     }
 
     public function reject(?string $reason = null): void
     {
         DB::transaction(function () use ($reason) {
-            $this->releaseStock();
+            if ($this->status === 'aprobada') {
+                $this->releaseStock();
+            }
             $this->update(['status' => 'rechazada', 'cancellation_reason' => $reason]);
             $this->workOrder->update(['status' => 'cancelada']);
             $this->workOrder->addTimelineEvent('cancelada', auth()->user()->name, 'Cotización rechazada. ' . ($reason ?? ''));
@@ -136,9 +138,11 @@ class Quote extends Model
     public function cancel(string $reason): void
     {
         DB::transaction(function () use ($reason) {
-            $this->releaseStock();
+            if ($this->status === 'aprobada') {
+                $this->releaseStock();
+            }
             $this->update(['status' => 'rechazada', 'cancellation_reason' => $reason]);
-            $this->workOrder->addTimelineEvent('cancelada', auth()->user()->name, $reason);
+            $this->workOrder->addTimelineEvent('cancelada', 'Sistema', $reason);
             $this->workOrder->update(['status' => 'cancelada']);
         });
     }

@@ -291,6 +291,62 @@ class PosMixedPaymentTest extends TestCase
         $response->assertSessionHas('error');
     }
 
+    public function test_checkout_rejects_insufficient_stock(): void
+    {
+        $this->actingAs($this->user);
+
+        $response = $this->post(route('pos.checkout'), [
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'type' => 'producto',
+                    'description' => $this->product->name,
+                    'quantity' => 999,
+                    'unit_price' => $this->product->sale_price,
+                    'tax_percentage' => $this->product->tax_percentage,
+                ],
+            ],
+            'payment_method' => 'efectivo',
+            'amount_received' => 99999,
+        ]);
+
+        $response->assertRedirect(route('pos.index'));
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString('Stock insuficiente', session('error'));
+    }
+
+    public function test_checkout_rejects_aggregate_quantity_exceeding_stock(): void
+    {
+        $this->actingAs($this->user);
+
+        $response = $this->post(route('pos.checkout'), [
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'type' => 'producto',
+                    'description' => $this->product->name,
+                    'quantity' => 30,
+                    'unit_price' => $this->product->sale_price,
+                    'tax_percentage' => $this->product->tax_percentage,
+                ],
+                [
+                    'product_id' => $this->product->id,
+                    'type' => 'producto',
+                    'description' => $this->product->name,
+                    'quantity' => 30,
+                    'unit_price' => $this->product->sale_price,
+                    'tax_percentage' => $this->product->tax_percentage,
+                ],
+            ],
+            'payment_method' => 'efectivo',
+            'amount_received' => 99999,
+        ]);
+
+        $response->assertRedirect(route('pos.index'));
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString('Stock insuficiente', session('error'));
+    }
+
     public function test_print_route_returns_view(): void
     {
         $this->actingAs($this->user);

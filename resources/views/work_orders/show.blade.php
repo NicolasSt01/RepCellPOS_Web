@@ -116,7 +116,7 @@
         <div class="space-y-6">
             <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">
                 <div class="p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Estado y Prioridad</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Estado y Asignación</h2>
                     <div class="space-y-4">
                         <div>
                             <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Estado Actual</dt>
@@ -147,6 +147,38 @@
                                     @endif">
                                     {{ ucfirst($workOrder->priority) }}
                                 </span>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Técnico Asignado</dt>
+                            <dd class="mt-1">
+                                @if($workOrder->assignedTechnician)
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 px-3 py-1 text-sm font-medium">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        {{ $workOrder->assignedTechnician->name }}
+                                    </span>
+                                    <form method="POST" action="{{ route('work_orders.unassign_technician', $workOrder) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-xs text-red-600 hover:text-red-500 hover:underline">Desasignar</button>
+                                    </form>
+                                </div>
+                                @else
+                                <form method="POST" action="{{ route('work_orders.assign_technician', $workOrder) }}" class="flex gap-2 mt-1">
+                                    @csrf
+                                    <select name="assigned_to" required
+                                        class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                                        <option value="">Seleccionar técnico...</option>
+                                        @foreach($technicians as $tech)
+                                        <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="submit"
+                                        class="inline-flex items-center rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 transition-colors whitespace-nowrap">
+                                        Asignar
+                                    </button>
+                                </form>
+                                @endif
                             </dd>
                         </div>
                     </div>

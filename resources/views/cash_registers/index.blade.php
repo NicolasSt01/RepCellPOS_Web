@@ -49,6 +49,40 @@
                     Retiro parcial
                 </button>
             </div>
+
+            @if($movements->isNotEmpty())
+            <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h3 class="text-md font-semibold text-gray-900 dark:text-gray-100 mb-3">Movimientos de esta caja</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/50">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fecha</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tipo</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motivo</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Monto</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Autorizado por</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach($movements as $movement)
+                            <tr>
+                                <td class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{{ $movement->created_at->format('d/m/Y H:i') }}</td>
+                                <td class="px-3 py-2 text-sm">
+                                    <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                                        {{ ucfirst($movement->type) }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{ $movement->reason }}</td>
+                                <td class="px-3 py-2 text-sm text-right font-medium text-red-600 dark:text-red-400">-${{ number_format($movement->amount, 2) }}</td>
+                                <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{ $movement->authorized_by ?? '—' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
     @endif
@@ -89,6 +123,41 @@
             </div>
             @if($registers->hasPages())
             <div class="mt-4">{{ $registers->links() }}</div>
+            @endif
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Historial de Retiros</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fecha</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Caja</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motivo</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Monto</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Autorizado por</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @forelse($allMovements as $movement)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $movement->created_at->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{{ $movement->cashRegister->user->name }} — #{{ $movement->cash_register_id }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{{ $movement->reason }}</td>
+                            <td class="px-4 py-3 text-sm text-right font-medium text-red-600 dark:text-red-400">-${{ number_format($movement->amount, 2) }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{{ $movement->authorized_by ?? '—' }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No hay retiros registrados.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if($allMovements->hasPages())
+            <div class="mt-4">{{ $allMovements->links() }}</div>
             @endif
         </div>
     </div>

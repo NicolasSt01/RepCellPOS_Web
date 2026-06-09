@@ -6,6 +6,7 @@ use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\SettingsController;
@@ -34,9 +35,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('clients', ClientController::class);
 
     Route::resource('work_orders', WorkOrderController::class);
+    Route::get('/work_orders/reports', [WorkOrderController::class, 'reports'])->name('work_orders.reports');
     Route::post('/work_orders/{work_order}/change_status', [WorkOrderController::class, 'changeStatus'])->name('work_orders.change_status');
     Route::post('/work_orders/{work_order}/set_priority', [WorkOrderController::class, 'setPriority'])->name('work_orders.set_priority');
     Route::post('/work_orders/{work_order}/add_note', [WorkOrderController::class, 'addNote'])->name('work_orders.add_note');
+    Route::post('/work_orders/{work_order}/assign_technician', [WorkOrderController::class, 'assignTechnician'])->name('work_orders.assign_technician');
+    Route::post('/work_orders/{work_order}/unassign_technician', [WorkOrderController::class, 'unassignTechnician'])->name('work_orders.unassign_technician');
 
     Route::resource('categories', CategoryController::class)->except(['show']);
 
@@ -54,6 +58,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
     Route::get('/pos/print/{sale}', [PosController::class, 'print'])->name('pos.print');
     Route::get('/pos/print/{sale}/preview', [PosController::class, 'printPreview'])->name('pos.print.preview');
+
+    Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+    Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+    Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
 
     Route::get('/cash_registers', [CashRegisterController::class, 'index'])->name('cash_registers.index');
     Route::post('/cash_registers/open', [CashRegisterController::class, 'open'])->name('cash_registers.open');

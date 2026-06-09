@@ -11,7 +11,7 @@ use Illuminate\View\View;
 
 class CashRegisterController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $registers = CashRegister::with('user')
             ->where('tenant_id', Auth::user()->tenant_id)
@@ -22,7 +22,17 @@ class CashRegisterController extends Controller
             ->where('status', 'abierta')
             ->first();
 
-        return view('cash_registers.index', compact('registers', 'openRegister'));
+        $movements = collect();
+        if ($openRegister) {
+            $movements = $openRegister->movements()->latest()->get();
+        }
+
+        $allMovements = CashRegisterMovement::with('cashRegister.user')
+            ->whereHas('cashRegister', fn($q) => $q->where('tenant_id', Auth::user()->tenant_id))
+            ->latest()
+            ->paginate(20);
+
+        return view('cash_registers.index', compact('registers', 'openRegister', 'movements', 'allMovements'));
     }
 
     public function open(Request $request): RedirectResponse

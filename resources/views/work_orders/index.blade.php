@@ -33,7 +33,7 @@
                     </a>
                     @endif
                 </div>
-                <div class="flex gap-3">
+                <div class="flex gap-3 flex-wrap">
                     <select name="status" class="rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
                         <option value="">Todos los estados</option>
                         <option value="recibida" {{ ($status ?? '') === 'recibida' ? 'selected' : '' }}>Recibida</option>
@@ -53,6 +53,13 @@
                         <option value="media" {{ ($priority ?? '') === 'media' ? 'selected' : '' }}>Media</option>
                         <option value="alta" {{ ($priority ?? '') === 'alta' ? 'selected' : '' }}>Alta</option>
                     </select>
+                    <select name="assigned_to" class="rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                        <option value="">Todos los técnicos</option>
+                        <option value="unassigned" {{ (request('assigned_to') ?? '') === 'unassigned' ? 'selected' : '' }}>Sin asignar</option>
+                        @foreach($technicians as $tech)
+                        <option value="{{ $tech->id }}" {{ (request('assigned_to') ?? '') == $tech->id ? 'selected' : '' }}>{{ $tech->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </form>
         </div>
@@ -66,6 +73,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Equipo</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Prioridad</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Técnico</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -109,6 +117,11 @@
                                 {{ ucfirst($wo->priority) }}
                             </span>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900 dark:text-gray-100">
+                                {{ $wo->assignedTechnician->name ?? '—' }}
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {{ $wo->created_at->format('d/m/Y H:i') }}
                         </td>
@@ -118,7 +131,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
                             No hay órdenes de trabajo registradas.
                         </td>
                     </tr>

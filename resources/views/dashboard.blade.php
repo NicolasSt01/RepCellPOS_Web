@@ -100,7 +100,71 @@
         </div>
     </div>
 
-    <!-- Charts Grid (Flat design, no gradients) -->
+    <!-- OT KPIs grid -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-slate-50 dark:bg-slate-900/30 rounded-md text-slate-600 dark:text-slate-400">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Pendientes</dt>
+                            <dd class="text-2xl font-bold text-gray-900 dark:text-white">{{ $pendingOrders }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-orange-50 dark:bg-orange-900/30 rounded-md text-orange-600 dark:text-orange-400">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.42 15.17l-5.384 3.065A1 1 0 014.5 17.37V6.63a1 1 0 011.536-.864l5.384 3.065M15.42 15.17l5.384-3.065a1 1 0 000-1.732L15.42 7.31"/></svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">En Reparación</dt>
+                            <dd class="text-2xl font-bold text-gray-900 dark:text-white">{{ $inRepairOrders }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-green-50 dark:bg-green-900/30 rounded-md text-green-600 dark:text-green-400">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Completadas (este mes)</dt>
+                            <dd class="text-2xl font-bold text-gray-900 dark:text-white">{{ $completedThisMonth }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-red-50 dark:bg-red-900/30 rounded-md text-red-600 dark:text-red-400">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Sin Técnico Asignado</dt>
+                            <dd class="text-2xl font-bold text-gray-900 dark:text-white">{{ $unassignedOrders }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Chart 1: Order Status Distribution -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -216,6 +280,45 @@
         </div>
     </div>
 
+    <!-- Technician Workload Section -->
+    @if($technicianWorkload->isNotEmpty())
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <svg class="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            Carga de Trabajo por Técnico
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-900/50">
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Técnico</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Órdenes Activas</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Barra</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    @php $maxLoad = $technicianWorkload->max('total') ?: 1; @endphp
+                    @foreach($technicianWorkload as $tw)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-900/25">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {{ $tw->assignedTechnician->name ?? '—' }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+                            {{ $tw->total }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="w-full bg-gray-100 dark:bg-gray-700 h-2.5 rounded-full overflow-hidden">
+                                <div class="bg-purple-500 h-full rounded-full" style="width: {{ ($tw->total / $maxLoad) * 100 }}%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
     <!-- Recent Work Orders Table Section -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -249,6 +352,7 @@
                             <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dispositivo</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Técnico</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Prioridad</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recibida</th>
                             <th scope="col" class="px-4 py-3 class=text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
@@ -320,6 +424,9 @@
                                     <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold {{ $statusBadgeClass }}">
                                         {{ ucfirst($order->status) }}
                                     </span>
+                                </td>
+                                <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                    {{ $order->assignedTechnician->name ?? '—' }}
                                 </td>
                                 <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                                     <div class="flex items-center gap-1.5">

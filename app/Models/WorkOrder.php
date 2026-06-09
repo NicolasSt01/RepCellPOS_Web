@@ -18,6 +18,7 @@ class WorkOrder extends Model
         'tenant_id',
         'client_id',
         'user_id',
+        'assigned_to',
         'device_brand',
         'device_model',
         'device_serial',
@@ -46,6 +47,11 @@ class WorkOrder extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function assignedTechnician(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function quote(): HasOne

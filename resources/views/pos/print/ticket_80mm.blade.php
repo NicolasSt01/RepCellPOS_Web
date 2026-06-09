@@ -1,94 +1,123 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ticket #{{ $sale->id }}</title>
     <style>
-        @page { margin: 0; size: 80mm auto; }
-        body { font-family: 'Courier New', monospace; font-size: 11px; width: 72mm; margin: 0 auto; padding: 3mm; }
-        .header { text-align: center; margin-bottom: 4mm; }
-        .header h2 { margin: 0; font-size: 14px; }
-        .header p { margin: 1mm 0; font-size: 10px; }
-        hr { border: none; border-top: 1px dashed #000; margin: 2mm 0; }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            width: 80mm;
+            margin: 0 auto;
+            padding: 10px;
+            font-size: 12px;
+            background-color: #fff;
+            color: #000;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .mt-2 { margin-top: 10px; }
+        .mb-2 { margin-bottom: 10px; }
+        .border-t { border-top: 1px dashed #000; }
+        .border-b { border-bottom: 1px dashed #000; }
+        .py-1 { padding-top: 5px; padding-bottom: 5px; }
+        .py-2 { padding-top: 10px; padding-bottom: 10px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; font-size: 10px; padding: 1px 2px; }
-        th { border-bottom: 1px solid #000; }
-        .item-desc { width: 50%; }
-        .item-qty, .item-price, .item-total { text-align: right; width: 16%; }
-        .totals td { font-weight: bold; padding: 2px; }
-        .totals td:last-child { text-align: right; }
-        .grand-total { font-size: 14px; font-weight: bold; }
-        .payment-info { margin-top: 3mm; font-size: 10px; }
-        .footer { text-align: center; margin-top: 4mm; font-size: 9px; }
-        @media print { html, body { width: 80mm; } }
+        th, td { padding: 2px 0; text-align: left; }
+        th { border-bottom: 1px dashed #000; }
+        .item-row td { vertical-align: top; }
+        
+        @media print {
+            body { margin: 0; padding: 0; }
+            #print-button { display: none; }
+        }
     </style>
 </head>
-<body>
-    <div class="header">
-        <h2>{{ $tenant->name }}</h2>
-        @if($tenant->address)<p>{{ $tenant->address }}</p>@endif
-        @if($tenant->phone)<p>Tel: {{ $tenant->phone }}</p>@endif
-        <p>Ticket #{{ $sale->id }}</p>
-        <p>{{ $sale->created_at->format('d/m/Y H:i') }}</p>
-        <p>Atendió: {{ $sale->user->name }}</p>
+<body onload="window.print()">
+
+    <div class="text-center mb-2">
+        <h2 class="font-bold" style="margin:0;">{{ $tenant->name }}</h2>
+        @if($tenant->address)<p style="margin:2px 0;">{{ $tenant->address }}</p>@endif
+        @if($tenant->phone)<p style="margin:2px 0;">Tel: {{ $tenant->phone }}</p>@endif
     </div>
-    <hr>
-    <table>
+
+    <div class="border-t py-2 border-b mb-2">
+        <p style="margin:2px 0;">Ticket: #{{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</p>
+        <p style="margin:2px 0;">Fecha: {{ $sale->created_at->format('d/m/Y H:i') }}</p>
+        <p style="margin:2px 0;">Cajero: {{ $sale->user->name }}</p>
+    </div>
+
+    <table class="mb-2">
         <thead>
             <tr>
-                <th class="item-desc">Artículo</th>
-                <th class="item-qty">Cant</th>
-                <th class="item-price">P/U</th>
-                <th class="item-total">Total</th>
+                <th>Cant</th>
+                <th>Descripción</th>
+                <th class="text-right">Importe</th>
             </tr>
         </thead>
         <tbody>
             @foreach($sale->saleItems as $item)
-            <tr>
-                <td class="item-desc">{{ $item->description }}</td>
-                <td class="item-qty">{{ $item->quantity }}</td>
-                <td class="item-price">${{ number_format($item->unit_price, 2) }}</td>
-                <td class="item-total">${{ number_format($item->subtotal, 2) }}</td>
+            <tr class="item-row">
+                <td>{{ $item->quantity }}</td>
+                <td>{{ $item->description }}<br><small>${{ number_format($item->unit_price, 2) }} c/u</small></td>
+                <td class="text-right">${{ number_format($item->subtotal, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
-    <hr>
-    <table class="totals">
-        <tr><td>Subtotal</td><td>${{ number_format($sale->subtotal, 2) }}</td></tr>
-        @if($sale->tax_total > 0)
-        <tr><td>IVA</td><td>${{ number_format($sale->tax_total, 2) }}</td></tr>
-        @endif
-        @if($sale->discount > 0)
-        <tr><td>Descuento</td><td>-${{ number_format($sale->discount, 2) }}</td></tr>
-        @endif
-        <tr class="grand-total"><td>TOTAL</td><td>${{ number_format($sale->total, 2) }}</td></tr>
-    </table>
-    <hr>
-    <div class="payment-info">
-        <strong>Método de pago:</strong>
-        @switch($sale->payment_method)
-            @case('efectivo')
-                Efectivo — Recibido: ${{ number_format($sale->cash_amount, 2) }}
-                @if($sale->change_amount > 0)
-                    <br>Cambio: ${{ number_format($sale->change_amount, 2) }}
-                @endif
-                @break
-            @case('tarjeta_transferencia')
-                Tarjeta / Transferencia — Folio: {{ $sale->payment_reference }}
-                @break
-            @case('mixto')
-                Efectivo: ${{ number_format($sale->cash_amount, 2) }}<br>
-                Tarjeta: ${{ number_format($sale->card_amount, 2) }} — Folio: {{ $sale->payment_reference }}
-                @if($sale->change_amount > 0)
-                    <br>Cambio: ${{ number_format($sale->change_amount, 2) }}
-                @endif
-                @break
-        @endswitch
+
+    <div class="border-t pt-2">
+        <table style="width: 100%;">
+            <tr>
+                <td>Subtotal:</td>
+                <td class="text-right">${{ number_format($sale->subtotal, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Impuestos:</td>
+                <td class="text-right">${{ number_format($sale->tax_total, 2) }}</td>
+            </tr>
+            <tr>
+                <td class="font-bold" style="font-size: 14px; padding-top: 5px;">Total:</td>
+                <td class="text-right font-bold" style="font-size: 14px; padding-top: 5px;">${{ number_format($sale->total, 2) }}</td>
+            </tr>
+        </table>
     </div>
-    <div class="footer">
-        <p>¡Gracias por su preferencia!</p>
+
+    <div class="border-t mt-2 pt-2">
+        <p style="margin:2px 0;">Pago en {{ ucfirst($sale->payment_method) }}</p>
+        @if($sale->payment_method === 'efectivo' || $sale->payment_method === 'mixto')
+        <table style="width: 100%;">
+            <tr>
+                <td>Efectivo Recibido:</td>
+                <td class="text-right">${{ number_format($sale->cash_amount, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Cambio:</td>
+                <td class="text-right">${{ number_format($sale->change_amount, 2) }}</td>
+            </tr>
+        </table>
+        @endif
+        @if($sale->payment_method === 'tarjeta_transferencia' || $sale->payment_method === 'mixto')
+        <table style="width: 100%;">
+            <tr>
+                <td>Monto Tarjeta:</td>
+                <td class="text-right">${{ number_format($sale->card_amount, 2) }}</td>
+            </tr>
+            @if($sale->payment_reference)
+            <tr>
+                <td>Referencia:</td>
+                <td class="text-right">{{ $sale->payment_reference }}</td>
+            </tr>
+            @endif
+        </table>
+        @endif
     </div>
-    @if(!($preview ?? false))<script>window.print();</script>@endif
+
+    <div class="text-center mt-2 pt-2 border-t" style="font-size: 11px;">
+        <p>¡Gracias por su compra!</p>
+        <p>Este comprobante no es válido como factura.</p>
+    </div>
+
 </body>
 </html>

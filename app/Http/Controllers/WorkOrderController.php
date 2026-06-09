@@ -8,13 +8,14 @@ use App\Models\WorkOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class WorkOrderController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = WorkOrder::with(['client', 'user'])->latest();
+        $query = WorkOrder::with(['client', 'user', 'assignedTechnician'])->latest();
 
         if ($status = $request->input('status')) {
             $query->where('status', $status);
@@ -22,6 +23,14 @@ class WorkOrderController extends Controller
 
         if ($priority = $request->input('priority')) {
             $query->where('priority', $priority);
+        }
+
+        if ($assignedTo = $request->input('assigned_to')) {
+            if ($assignedTo === 'unassigned') {
+                $query->whereNull('assigned_to');
+            } else {
+                $query->where('assigned_to', $assignedTo);
+            }
         }
 
         if ($search = $request->input('search')) {
@@ -37,7 +46,9 @@ class WorkOrderController extends Controller
 
         $workOrders = $query->paginate(15)->withQueryString();
 
-        return view('work_orders.index', compact('workOrders', 'status', 'priority', 'search'));
+        $technicians = User::whereHas('roles', fn($q) => $q->where('name', 'Tecnico'))->orderBy('name')->get();
+
+        return view('work_orders.index', compact('workOrders', 'status', 'priority', 'search', 'technicians'));
     }
 
     public function create(): View
@@ -88,8 +99,9 @@ class WorkOrderController extends Controller
 
     public function show(WorkOrder $workOrder): View
     {
-        $workOrder->load(['client', 'user', 'quote.quoteItems']);
-        return view('work_orders.show', compact('workOrder'));
+        $workOrder->load(['client', 'user', 'assignedTechnician', 'quote.quoteItems']);
+        $technicians = User::whereHas('roles', fn($q) => $q->where('name', 'Tecnico'))->orderBy('name')->get();
+        return view('work_orders.show', compact('workOrder', 'technicians'));
     }
 
     public function edit(WorkOrder $workOrder): View
@@ -162,6 +174,61 @@ class WorkOrderController extends Controller
             ->with('success', 'Prioridad actualizada exitosamente.');
     }
 
+    public function reports(Request $request): View
+    {
+        $query = WorkOrder::with(['client', 'user', 'assignedTechnician']);
+
+        if ($dateFrom = $request->input('date_from')) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo = $request->input('date_to')) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($priority = $request->input('priority')) {
+            $query->where('priority', $priority);
+        }
+
+        if ($assignedTo = $request->input('assigned_to')) {
+            if ($assignedTo === 'unassigned') {
+                $query->whereNull('assigned_to');
+            } else {
+                $query->where('assigned_to', $assignedTo);
+            }
+        }
+
+        $workOrders = $query->latest()->paginate(25)->withQueryString();
+
+        $technicians = User::whereHas('roles', fn($q) => $q->where('name', 'Tecnico'))->orderBy('name')->get();
+
+        $summary = WorkOrder::selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN status NOT IN ('terminada','cancelada') THEN 1 ELSE 0 END) as active_count,
+            SUM(CASE WHEN status = 'terminada' THEN 1 ELSE 0 END) as completed_count,
+            SUM(CASE WHEN status = 'cancelada' THEN 1 ELSE 0 END) as cancelled_count,
+            SUM(CASE WHEN status IN ('en_espera','recibida') THEN 1 ELSE 0 END) as pending_count
+        ")->first();
+
+        $byStatus = WorkOrder::selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $byTechnician = WorkOrder::selectRaw('assigned_to, count(*) as total')
+            ->whereNotNull('assigned_to')
+            ->whereNotIn('status', ['terminada', 'cancelada'])
+            ->groupBy('assigned_to')
+            ->with('assignedTechnician')
+            ->orderByDesc('total')
+            ->get();
+
+        return view('work_orders.reports', compact('workOrders', 'technicians', 'summary', 'byStatus', 'byTechnician'));
+    }
+
     public function addNote(Request $request, WorkOrder $workOrder): RedirectResponse
     {
         $validated = $request->validate([
@@ -176,5 +243,41 @@ class WorkOrderController extends Controller
 
         return redirect()->route('work_orders.show', $workOrder)
             ->with('success', 'Anotación agregada exitosamente.');
+    }
+
+    public function assignTechnician(Request $request, WorkOrder $workOrder): RedirectResponse
+    {
+        $validated = $request->validate([
+            'assigned_to' => 'required|exists:users,id',
+        ]);
+
+        $technician = User::find($validated['assigned_to']);
+
+        $workOrder->update(['assigned_to' => $technician->id]);
+        $workOrder->addTimelineEvent(
+            $workOrder->status,
+            Auth::user()->name,
+            "Técnico asignado: {$technician->name}"
+        );
+
+        return redirect()->route('work_orders.show', $workOrder)
+            ->with('success', "Técnico {$technician->name} asignado a la orden.");
+    }
+
+    public function unassignTechnician(WorkOrder $workOrder): RedirectResponse
+    {
+        $technician = $workOrder->assignedTechnician;
+        $workOrder->update(['assigned_to' => null]);
+
+        if ($technician) {
+            $workOrder->addTimelineEvent(
+                $workOrder->status,
+                Auth::user()->name,
+                "Técnico desasignado: {$technician->name}"
+            );
+        }
+
+        return redirect()->route('work_orders.show', $workOrder)
+            ->with('success', 'Técnico desasignado de la orden.');
     }
 }

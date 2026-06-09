@@ -12,20 +12,38 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        // Métricas dinámicas, auto-scopadas por tenant
         $clientsCount = Client::count();
         $activeOrdersCount = WorkOrder::whereNotIn('status', ['terminada', 'cancelada'])->count();
         $salesToday = Sale::whereDate('created_at', today())->sum('total');
         $productsCount = Product::where('is_active', true)->count();
 
-        // Actividad reciente: últimas 5 órdenes de trabajo con su cliente
-        $recentOrders = WorkOrder::with('client')
+        // Work order KPIs
+        $pendingOrders = WorkOrder::whereIn('status', ['en_espera', 'recibida'])->count();
+        $inRepairOrders = WorkOrder::where('status', 'en_reparacion')->count();
+        $completedThisMonth = WorkOrder::where('status', 'terminada')
+            ->whereMonth('updated_at', now()->month)
+            ->count();
+
+        $unassignedOrders = WorkOrder::whereNull('assigned_to')
+            ->whereNotIn('status', ['terminada', 'cancelada'])
+            ->count();
+
+        // Technician workload (top 5)
+        $technicianWorkload = WorkOrder::selectRaw('assigned_to, count(*) as total')
+            ->whereNotNull('assigned_to')
+            ->whereNotIn('status', ['terminada', 'cancelada'])
+            ->groupBy('assigned_to')
+            ->with('assignedTechnician')
+            ->orderByDesc('total')
+            ->take(5)
+            ->get();
+
+        $recentOrders = WorkOrder::with(['client', 'assignedTechnician'])
             ->latest()
             ->take(5)
             ->get();
 
-        // Datos para gráficas
-        // 1. Distribución de órdenes por estado
+        // Distribución de órdenes por estado
         $ordersByStatus = WorkOrder::selectRaw('status, count(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
@@ -53,12 +71,11 @@ class DashboardController extends Controller
             ];
         }
 
-        // 2. Ventas semanales (últimos 7 días)
+        // Ventas semanales (últimos 7 días)
         $weeklySalesData = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
-            $dayName = $date->isoFormat('dddd'); // e.g. "lunes"
-            $dayName = ucfirst(substr($dayName, 0, 3)); // e.g. "Lun"
+            $dayName = ucfirst(substr($date->isoFormat('dddd'), 0, 3));
             $amount = Sale::whereDate('created_at', $date->toDateString())->sum('total');
             $weeklySalesData[] = [
                 'day' => $dayName,
@@ -72,6 +89,11 @@ class DashboardController extends Controller
             'activeOrdersCount',
             'salesToday',
             'productsCount',
+            'pendingOrders',
+            'inRepairOrders',
+            'completedThisMonth',
+            'unassignedOrders',
+            'technicianWorkload',
             'recentOrders',
             'orderStatusChartData',
             'weeklySalesData'

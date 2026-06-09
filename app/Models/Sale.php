@@ -28,6 +28,8 @@ class Sale extends Model
         'change_amount',
         'cash_amount',
         'card_amount',
+        'refunded_total',
+        'return_status',
     ];
 
     protected function casts(): array
@@ -40,6 +42,7 @@ class Sale extends Model
             'change_amount' => 'decimal:2',
             'cash_amount' => 'decimal:2',
             'card_amount' => 'decimal:2',
+            'refunded_total' => 'decimal:2',
         ];
     }
 

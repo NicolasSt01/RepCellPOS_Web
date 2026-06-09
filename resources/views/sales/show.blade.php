@@ -14,6 +14,11 @@
             <a href="{{ route('sales.print', $sale) }}" target="_blank" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
                 Imprimir ticket
             </a>
+            @if(!$sale->return_status)
+            <a href="{{ route('returns.create') }}?folio={{ $sale->id }}" class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 transition-colors">
+                Devolver
+            </a>
+            @endif
         </div>
     </div>
 
@@ -55,6 +60,9 @@
                         <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Descuento</dt><dd class="text-red-600">-${{ number_format($sale->discount, 2) }}</dd></div>
                         @endif
                         <div class="flex justify-between text-base font-bold border-t border-gray-200 dark:border-gray-700 pt-2"><dt class="text-gray-900 dark:text-gray-100">Total</dt><dd class="text-indigo-600 dark:text-indigo-400">${{ number_format($sale->total, 2) }}</dd></div>
+                        @if($sale->refunded_total > 0)
+                        <div class="flex justify-between text-sm"><dt class="text-gray-500 dark:text-gray-400">Devuelto</dt><dd class="text-red-600 dark:text-red-400">-${{ number_format($sale->refunded_total, 2) }}</dd></div>
+                        @endif
                     </dl>
                 </div>
             </div>
@@ -101,6 +109,15 @@
                     <div><span class="text-gray-500 dark:text-gray-400">Cliente:</span> <span class="ml-1 font-medium text-gray-900 dark:text-gray-100">{{ $sale->client->name }}</span></div>
                     @endif
                     <div><span class="text-gray-500 dark:text-gray-400">Caja:</span> <span class="ml-1 font-medium text-gray-900 dark:text-gray-100">#{{ $sale->cash_register_id }}</span></div>
+                    @if($sale->return_status)
+                    <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-500 dark:text-gray-400">Devolución:</span>
+                        <span class="ml-1 font-medium {{ $sale->return_status === 'total' ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400' }}">
+                            {{ $sale->return_status === 'total' ? 'Total' : 'Parcial' }}
+                            (${{ number_format($sale->refunded_total, 2) }})
+                        </span>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

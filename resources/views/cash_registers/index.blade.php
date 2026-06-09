@@ -25,7 +25,7 @@
                 <div><dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Fondo inicial</dt><dd class="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">${{ number_format($openRegister->opening_amount, 2) }}</dd></div>
                 <div><dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Efectivo esperado</dt><dd class="mt-1 text-sm font-bold text-indigo-600 dark:text-indigo-400">${{ number_format($openRegister->getExpectedCash(), 2) }}</dd></div>
             </dl>
-            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
                 <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                     <p class="text-sm text-green-700 dark:text-green-400">Ventas efectivo</p>
                     <p class="text-xl font-bold text-green-800 dark:text-green-300">${{ number_format($openRegister->getTotalCashSales(), 2) }}</p>
@@ -37,6 +37,10 @@
                 <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
                     <p class="text-sm text-red-700 dark:text-red-400">Retiros</p>
                     <p class="text-xl font-bold text-red-800 dark:text-red-300">${{ number_format($openRegister->getTotalWithdrawals(), 2) }}</p>
+                </div>
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                    <p class="text-sm text-orange-700 dark:text-orange-400">Devoluciones</p>
+                    <p class="text-xl font-bold text-orange-800 dark:text-orange-300">${{ number_format($openRegister->getTotalReturns(), 2) }}</p>
                 </div>
             </div>
             <div class="mt-6 flex gap-3">
@@ -69,8 +73,10 @@
                             <tr>
                                 <td class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{{ $movement->created_at->format('d/m/Y H:i') }}</td>
                                 <td class="px-3 py-2 text-sm">
-                                    <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                                        {{ ucfirst($movement->type) }}
+                                    <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium
+                                        {{ $movement->type === 'retiro' ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : '' }}
+                                        {{ $movement->type === 'devolucion' ? 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400' : '' }}">
+                                        {{ $movement->type === 'devolucion' ? 'Devolución' : ucfirst($movement->type) }}
                                     </span>
                                 </td>
                                 <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{ $movement->reason }}</td>

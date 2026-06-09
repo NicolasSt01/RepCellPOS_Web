@@ -65,11 +65,16 @@ class CashRegister extends Model
 
     public function getTotalWithdrawals(): float
     {
-        return $this->movements()->sum('amount');
+        return (float) $this->movements()->where('type', 'retiro')->sum('amount');
+    }
+
+    public function getTotalReturns(): float
+    {
+        return (float) $this->movements()->where('type', 'devolucion')->sum('amount');
     }
 
     public function getExpectedCash(): float
     {
-        return $this->opening_amount + $this->getTotalCashSales() - $this->getTotalWithdrawals();
+        return $this->opening_amount + $this->getTotalCashSales() - $this->getTotalWithdrawals() - $this->getTotalReturns();
     }
 }

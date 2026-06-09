@@ -6,6 +6,7 @@ use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuoteController;
@@ -74,6 +75,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
     Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
     Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
+
+    Route::get('/returns', [ReturnController::class, 'index'])->name('returns.index');
+    Route::get('/returns/create', [ReturnController::class, 'create'])->name('returns.create');
+    Route::post('/returns/search-sale', [ReturnController::class, 'searchSale'])->name('returns.search_sale');
+    Route::post('/returns', [ReturnController::class, 'store'])->name('returns.store');
 
     Route::get('/cash_registers', [CashRegisterController::class, 'index'])->name('cash_registers.index');
     Route::post('/cash_registers/open', [CashRegisterController::class, 'open'])->name('cash_registers.open');

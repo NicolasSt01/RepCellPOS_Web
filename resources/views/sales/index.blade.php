@@ -60,17 +60,27 @@
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Subtotal</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Pago</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Devolución</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($sales as $sale)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors
+                        {{ $sale->return_status === 'total' ? 'bg-red-50 dark:bg-red-900/10' : '' }}
+                        {{ $sale->return_status === 'parcial' ? 'bg-orange-50 dark:bg-orange-900/10' : '' }}">
                         <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">#{{ $sale->id }}</td>
                         <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $sale->created_at->format('d/m/Y H:i') }}</td>
                         <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{{ $sale->user->name }}</td>
                         <td class="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">${{ number_format($sale->subtotal, 2) }}</td>
-                        <td class="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-gray-100">${{ number_format($sale->total, 2) }}</td>
+                        <td class="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-gray-100">
+                            @if($sale->refunded_total > 0)
+                            <span class="line-through text-gray-400 dark:text-gray-500">${{ number_format($sale->total, 2) }}</span>
+                            <span class="text-red-600 dark:text-red-400 ml-1">${{ number_format($sale->total - $sale->refunded_total, 2) }}</span>
+                            @else
+                            ${{ number_format($sale->total, 2) }}
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-center">
                             <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium
                                 {{ $sale->payment_method === 'efectivo' ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : '' }}
@@ -79,6 +89,18 @@
                                 {{ $sale->payment_method === 'efectivo' ? 'Efectivo' : ($sale->payment_method === 'tarjeta_transferencia' ? 'Tarjeta' : 'Mixto') }}
                             </span>
                         </td>
+                        <td class="px-4 py-3 text-center">
+                            @if($sale->return_status === 'total')
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                Total
+                            </span>
+                            @elseif($sale->return_status === 'parcial')
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                                Parcial
+                            </span>
+                            @else
+                            <span class="text-gray-300 dark:text-gray-600">—</span>
+                            @endif
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-2">
                                 <a href="{{ route('sales.show', $sale) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 text-sm font-medium">Detalle</a>
@@ -88,7 +110,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
                             No se encontraron ventas.
                         </td>
                     </tr>

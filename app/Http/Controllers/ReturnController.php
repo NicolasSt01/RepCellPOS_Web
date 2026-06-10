@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashRegister;
+
 use App\Models\CashRegisterMovement;
 use App\Models\Product;
 use App\Models\Sale;
@@ -15,6 +16,16 @@ use Illuminate\Validation\ValidationException;
 
 class ReturnController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!auth()->user()->can('pos.access')) {
+                abort(403, 'No tienes permiso para acceder a este módulo.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index()
     {
         $returns = SalesReturn::with('sale', 'user', 'returnItems')

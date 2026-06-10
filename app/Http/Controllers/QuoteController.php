@@ -76,22 +76,47 @@ class QuoteController extends Controller
             ->with('success', 'Cotización enviada al cliente.');
     }
 
-    public function approve(Quote $quote): RedirectResponse
+    public function approve(Request $request, Quote $quote)
     {
+        if (!auth()->user()->can('quotes.approve')) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'No tienes permiso para aprobar cotizaciones.'], 403);
+            }
+            abort(403, 'No tienes permiso para aprobar cotizaciones.');
+        }
+
         try {
             $quote->approve();
         } catch (\RuntimeException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
             return redirect()->route('quotes.show', $quote->workOrder)
                 ->with('error', $e->getMessage());
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Cotización aprobada correctamente.']);
         }
 
         return redirect()->route('work_orders.show', $quote->workOrder)
             ->with('success', 'Cotización aprobada. Orden en reparación.');
     }
 
-    public function reject(Request $request, Quote $quote): RedirectResponse
+    public function reject(Request $request, Quote $quote)
     {
+        if (!auth()->user()->can('quotes.approve')) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'No tienes permiso para rechazar cotizaciones.'], 403);
+            }
+            abort(403, 'No tienes permiso para rechazar cotizaciones.');
+        }
+
         $quote->reject($request->input('reason'));
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Cotización rechazada correctamente.']);
+        }
 
         return redirect()->route('work_orders.show', $quote->workOrder)
             ->with('success', 'Cotización rechazada. Orden cancelada.');

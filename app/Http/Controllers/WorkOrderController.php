@@ -179,7 +179,10 @@ class WorkOrderController extends Controller
     {
         $workOrder->load(['client', 'user', 'assignedTechnician', 'quote.quoteItems']);
         $technicians = $this->getAssignableUsers();
-        return view('work_orders.show', compact('workOrder', 'technicians'));
+        $cashRegister = \App\Models\CashRegister::where('tenant_id', auth()->user()->tenant_id)
+            ->where('status', 'abierta')
+            ->first();
+        return view('work_orders.show', compact('workOrder', 'technicians', 'cashRegister'));
     }
 
     public function edit(WorkOrder $workOrder): View

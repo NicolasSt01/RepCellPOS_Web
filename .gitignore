@@ -31,3 +31,6 @@ deploy.py
 commit_msg*.txt
 deploy_script_guide.md
 Documentacion_Software.md
+plan_cotizaciones.md
+implementation_plan.md
+implementation_planPOS.md

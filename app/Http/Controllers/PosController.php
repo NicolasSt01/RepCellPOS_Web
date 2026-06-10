@@ -17,6 +17,16 @@ use Illuminate\View\View;
 
 class PosController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!auth()->user()->can('pos.access')) {
+                abort(403, 'No tienes permiso para acceder a este módulo.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index(Request $request): View
     {
         $tenant = Auth::user()->tenant;
@@ -66,7 +76,14 @@ class PosController extends Controller
             }
         }
 
-        return view('pos.index', compact('topProducts', 'products', 'cashRegister', 'tenant', 'previewSaleId', 'workOrder', 'quoteItems'));
+        // Load active quotes for the POS quotes tab
+        $activeQuotes = Quote::where('tenant_id', $tenant->id)
+            ->whereIn('status', ['pendiente', 'enviada', 'aprobada'])
+            ->with(['workOrder.client', 'workOrder.assignedTechnician', 'quoteItems.product'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('pos.index', compact('topProducts', 'products', 'cashRegister', 'tenant', 'previewSaleId', 'workOrder', 'quoteItems', 'activeQuotes'));
     }
 
     public function checkout(Request $request): RedirectResponse
@@ -216,12 +233,25 @@ class PosController extends Controller
             if ($workOrder) {
                 if ($workOrder->status === 'cotizacion_aprobada') {
                     $workOrder->update(['status' => 'en_reparacion']);
+                    $workOrder->addTimelineEvent(
+                        'en_reparacion',
+                        Auth::user()->name,
+                        "Cotización cobrada desde POS — Venta #{$sale->id}. Equipo listo para reparación."
+                    );
+                } elseif ($workOrder->status === 'reparada') {
+                    $workOrder->update(['status' => 'terminada']);
+                    $workOrder->addTimelineEvent(
+                        'terminada',
+                        Auth::user()->name,
+                        "Orden cobrada y entregada al cliente desde POS — Venta #{$sale->id}"
+                    );
+                } else {
+                    $workOrder->addTimelineEvent(
+                        $workOrder->status,
+                        Auth::user()->name,
+                        "Orden cobrada desde POS — Venta #{$sale->id}"
+                    );
                 }
-                $workOrder->addTimelineEvent(
-                    $workOrder->status,
-                    Auth::user()->name,
-                    "Orden cobrada desde POS — Venta #{$sale->id}"
-                );
             }
 
             return $sale;

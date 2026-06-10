@@ -379,8 +379,10 @@ document.addEventListener('alpine:init', () => {
 
         init() {
             this.$watch('step', (val) => {
-                if (val === 4) {
-                    this.$nextTick(() => this.initPatternCanvas());
+                if ( val === 4) {
+                    this.$nextTick(() => {
+                        requestAnimationFrame(() => this.initPatternCanvas());
+                    });
                 } else {
                     this.stopCamera();
                 }

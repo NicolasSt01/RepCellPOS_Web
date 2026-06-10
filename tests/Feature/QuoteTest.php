@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CashRegister;
 use App\Models\Client;
+use Spatie\Permission\Models\Permission;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\Tenant;
@@ -52,6 +53,10 @@ class QuoteTest extends TestCase
             'opened_at' => now(),
             'status' => 'abierta',
         ]);
+
+        Permission::create(['guard_name' => 'web', 'name' => 'quotes.approve']);
+        Permission::create(['guard_name' => 'web', 'name' => 'pos.access']);
+        $this->user->givePermissionTo(['quotes.approve', 'pos.access']);
     }
 
     public function test_quote_page_is_accessible(): void

@@ -284,11 +284,16 @@
                                     class="block w-full text-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
                                     {{ $quote->quoteItems->count() > 0 ? 'Ver cotización' : 'Crear cotización' }}
                                 </a>
-                                @if($quote->status === 'aprobada')
+                                @if($quote->status === 'aprobada' && $cashRegister)
                                 <a href="{{ route('pos.index', ['work_order_id' => $workOrder->id]) }}"
                                     class="block w-full text-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 transition-colors">
                                     Cobrar desde POS
                                 </a>
+                                @elseif($quote->status === 'aprobada' && !$cashRegister)
+                                <span class="block w-full text-center rounded-md bg-gray-300 dark:bg-gray-600 px-3 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                                    title="Abre una caja primero para poder cobrar">
+                                    Cobrar desde POS — Sin caja abierta
+                                </span>
                                 @endif
                             </div>
                         </div>
@@ -313,15 +318,13 @@
                         <select name="status" required
                             class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
                             <option value="">Seleccionar nuevo estado...</option>
-                            @if($workOrder->canTransitionTo('en_espera')) <option value="en_espera">En Espera</option> @endif
-                            @if($workOrder->canTransitionTo('en_revision')) <option value="en_revision">En Revisión</option> @endif
-                            @if($workOrder->canTransitionTo('diagnosticada')) <option value="diagnosticada">Diagnosticada</option> @endif
-                            @if($workOrder->canTransitionTo('cotizacion_enviada')) <option value="cotizacion_enviada">Cotización Enviada</option> @endif
-                            @if($workOrder->canTransitionTo('cotizacion_aprobada')) <option value="cotizacion_aprobada">Cotización Aprobada</option> @endif
-                            @if($workOrder->canTransitionTo('en_reparacion')) <option value="en_reparacion">En Reparación</option> @endif
-                            @if($workOrder->canTransitionTo('reparada')) <option value="reparada">Reparada</option> @endif
-                            @if($workOrder->canTransitionTo('terminada')) <option value="terminada">Terminada</option> @endif
-                            @if($workOrder->canTransitionTo('cancelada')) <option value="cancelada">Cancelada</option> @endif
+                            <option value="en_espera">En Espera</option>
+                            <option value="en_revision">En Revisión</option>
+                            <option value="diagnosticada">Diagnosticada</option>
+                            <option value="en_reparacion">En Reparación</option>
+                            <option value="reparada">Reparada</option>
+                            <option value="terminada">Terminada</option>
+                            <option value="cancelada">Cancelada</option>
                         </select>
                         <textarea name="comment" rows="2" placeholder="Comentario (opcional)"
                             class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"></textarea>

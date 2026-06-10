@@ -9,6 +9,16 @@ use Illuminate\View\View;
 
 class SaleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!auth()->user()->can('pos.access')) {
+                abort(403, 'No tienes permiso para acceder a este módulo.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index(Request $request): View
     {
         $query = Sale::with('user', 'cashRegister')

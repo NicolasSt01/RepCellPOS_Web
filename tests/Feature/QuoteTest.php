@@ -408,6 +408,11 @@ class QuoteTest extends TestCase
 
         $this->workOrder->refresh();
         $this->assertEquals('en_reparacion', $this->workOrder->status);
+
+        // Quote should be marked as cobrada (no longer chargeable)
+        $quote = $this->workOrder->quote;
+        $quote->refresh();
+        $this->assertEquals('cobrada', $quote->status);
     }
 
     public function test_cannot_charge_non_approved_quote(): void
@@ -431,6 +436,45 @@ class QuoteTest extends TestCase
                 'payment_method' => 'efectivo',
                 'amount_received' => 600,
             ]);
+
+        $response->assertRedirect(route('pos.index'));
+        $response->assertSessionHas('error');
+    }
+
+    public function test_cannot_charge_already_charged_quote(): void
+    {
+        $this->createApprovedQuote();
+
+        // First charge works
+        $this->actingAs($this->user)->post(route('pos.checkout'), [
+            'work_order_id' => $this->workOrder->id,
+            'items' => [[
+                'type' => 'servicio',
+                'description' => 'Mano de obra',
+                'quantity' => 1,
+                'unit_price' => 500,
+                'tax_percentage' => 16,
+            ]],
+            'payment_method' => 'efectivo',
+            'amount_received' => 600,
+        ])->assertSessionHas('success');
+
+        $quote = $this->workOrder->quote->refresh();
+        $this->assertEquals('cobrada', $quote->status);
+
+        // Second attempt should fail — quote is already cobrada
+        $response = $this->actingAs($this->user)->post(route('pos.checkout'), [
+            'work_order_id' => $this->workOrder->id,
+            'items' => [[
+                'type' => 'servicio',
+                'description' => 'Mano de obra',
+                'quantity' => 1,
+                'unit_price' => 500,
+                'tax_percentage' => 16,
+            ]],
+            'payment_method' => 'efectivo',
+            'amount_received' => 600,
+        ]);
 
         $response->assertRedirect(route('pos.index'));
         $response->assertSessionHas('error');
@@ -763,6 +807,10 @@ class QuoteTest extends TestCase
 
         $this->workOrder->refresh();
         $this->assertEquals('en_reparacion', $this->workOrder->status);
+
+        // Quote should be marked as cobrada (no longer chargeable)
+        $quote->refresh();
+        $this->assertEquals('cobrada', $quote->status);
     }
 
     public function test_approving_quote_with_insufficient_stock_fails(): void

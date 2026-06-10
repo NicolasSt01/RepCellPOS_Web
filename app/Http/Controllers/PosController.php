@@ -229,6 +229,11 @@ class PosController extends Controller
                 }
             }
 
+            // Mark the quote as charged (no longer cobrable)
+            if ($workOrder && $workOrder->quote) {
+                $workOrder->quote->markAsCharged();
+            }
+
             // If this is a cobro_orden, update work order status
             if ($workOrder) {
                 if ($workOrder->status === 'cotizacion_aprobada') {

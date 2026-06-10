@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('work_order_id')->constrained('work_orders')->cascadeOnDelete();
-            $table->enum('status', ['pendiente', 'enviada', 'aprobada', 'rechazada'])->default('pendiente');
+            $table->string('status', 50)->default('pendiente');
             $table->decimal('subtotal', 10, 2)->default(0);
             $table->decimal('tax_total', 10, 2)->default(0);
             $table->decimal('total', 10, 2)->default(0);

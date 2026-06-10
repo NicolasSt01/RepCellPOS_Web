@@ -135,6 +135,11 @@ class Quote extends Model
         });
     }
 
+    public function markAsCharged(): void
+    {
+        $this->update(['status' => 'cobrada']);
+    }
+
     public function cancel(string $reason): void
     {
         DB::transaction(function () use ($reason) {

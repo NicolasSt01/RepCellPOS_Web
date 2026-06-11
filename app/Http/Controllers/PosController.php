@@ -6,6 +6,7 @@ use App\Models\CashRegister;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\Sale;
+use App\Models\TenantClause;
 use App\Models\SaleItem;
 use App\Models\WorkOrder;
 use Illuminate\Http\RedirectResponse;
@@ -300,23 +301,38 @@ class PosController extends Controller
         }
     }
 
+    private function authorizeTenant(Sale $sale): void
+    {
+        abort_if($sale->tenant_id !== Auth::user()->tenant_id, 403);
+    }
+
     public function print(Sale $sale): View
     {
-        $sale->load(['saleItems', 'user', 'client']);
+        $this->authorizeTenant($sale);
+
+        $sale->load(['saleItems', 'user', 'workOrder.client']);
         $tenant = $sale->tenant;
+        $format = $tenant->print_format ?? 'ticket_80mm';
+        $clauses = TenantClause::where('tenant_id', $tenant->id)
+            ->where('print_on_receipt', true)
+            ->where('is_active', true)
+            ->get();
 
-        $format = $tenant->print_format ?? 'ticket_58mm';
-
-        return view("pos.print.{$format}", compact('sale', 'tenant'));
+        return view("pos.print.{$format}", compact('sale', 'tenant', 'clauses'));
     }
 
     public function printPreview(Sale $sale): View
     {
-        $sale->load(['saleItems', 'user', 'client']);
+        $this->authorizeTenant($sale);
+
+        $sale->load(['saleItems', 'user', 'workOrder.client']);
         $tenant = $sale->tenant;
+        $format = $tenant->print_format ?? 'ticket_80mm';
+        $clauses = TenantClause::where('tenant_id', $tenant->id)
+            ->where('print_on_receipt', true)
+            ->where('is_active', true)
+            ->get();
 
-        $format = $tenant->print_format ?? 'ticket_58mm';
-
-        return view("pos.print.{$format}", compact('sale', 'tenant'))->with('preview', true);
+        return view("pos.print.{$format}", compact('sale', 'tenant', 'clauses'))->with('preview', true);
     }
 }

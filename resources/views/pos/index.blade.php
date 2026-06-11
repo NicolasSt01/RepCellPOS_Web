@@ -810,7 +810,9 @@ function posApp() {
         },
         printTicket() {
             if (this.previewSaleId) {
-                window.open('/pos/print/' + this.previewSaleId, '_blank', 'width=400,height=600');
+                const w = Math.min(500, window.innerWidth - 50);
+                const h = Math.min(700, window.innerHeight - 50);
+                window.open('/pos/print/' + this.previewSaleId, '_blank', 'width=' + w + ',height=' + h);
             }
         }
     }

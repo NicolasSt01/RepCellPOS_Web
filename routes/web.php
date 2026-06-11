@@ -86,23 +86,25 @@ Route::middleware('auth')->group(function () {
     Route::post('/cash_registers/{cashRegister}/close', [CashRegisterController::class, 'close'])->name('cash_registers.close');
     Route::post('/cash_registers/{cashRegister}/withdraw', [CashRegisterController::class, 'withdraw'])->name('cash_registers.withdraw');
 
-    Route::get('/settings/company', [SettingsController::class, 'company'])->name('settings.company');
-    Route::put('/settings/company', [SettingsController::class, 'updateCompany'])->name('settings.company.update');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index')->middleware('can:settings.company');
+    Route::get('/settings/company', [SettingsController::class, 'company'])->name('settings.company')->middleware('can:settings.company');
+    Route::put('/settings/company', [SettingsController::class, 'updateCompany'])->name('settings.company.update')->middleware('can:settings.company');
 
-    Route::get('/settings/users', [SettingsController::class, 'users'])->name('settings.users');
-    Route::post('/settings/users', [SettingsController::class, 'createUser'])->name('settings.users.store');
-    Route::put('/settings/users/{user}', [SettingsController::class, 'updateUser'])->name('settings.users.update');
-    Route::delete('/settings/users/{user}', [SettingsController::class, 'deleteUser'])->name('settings.users.destroy');
+    Route::get('/settings/users', [SettingsController::class, 'users'])->name('settings.users')->middleware('can:settings.users');
+    Route::post('/settings/users', [SettingsController::class, 'createUser'])->name('settings.users.store')->middleware('can:settings.users');
+    Route::put('/settings/users/{user}', [SettingsController::class, 'updateUser'])->name('settings.users.update')->middleware('can:settings.users');
+    Route::delete('/settings/users/{user}', [SettingsController::class, 'deleteUser'])->name('settings.users.destroy')->middleware('can:settings.users');
 
-    Route::get('/settings/roles', [SettingsController::class, 'roles'])->name('settings.roles');
-    Route::post('/settings/roles', [SettingsController::class, 'createRole'])->name('settings.roles.store');
-    Route::put('/settings/roles/{role}', [SettingsController::class, 'updateRole'])->name('settings.roles.update');
+    Route::get('/settings/roles', [SettingsController::class, 'roles'])->name('settings.roles')->middleware('can:settings.roles');
+    Route::post('/settings/roles', [SettingsController::class, 'createRole'])->name('settings.roles.store')->middleware('can:settings.roles');
+    Route::put('/settings/roles/{role}', [SettingsController::class, 'updateRole'])->name('settings.roles.update')->middleware('can:settings.roles');
+    Route::delete('/settings/roles/{role}', [SettingsController::class, 'deleteRole'])->name('settings.roles.destroy')->middleware('can:settings.roles');
 
-    Route::get('/settings/clauses', [SettingsController::class, 'clauses'])->name('settings.clauses');
-    Route::post('/settings/clauses', [SettingsController::class, 'storeClause'])->name('settings.clauses.store');
-    Route::put('/settings/clauses/{clause}', [SettingsController::class, 'updateClause'])->name('settings.clauses.update');
-    Route::delete('/settings/clauses/{clause}', [SettingsController::class, 'deleteClause'])->name('settings.clauses.destroy');
+    Route::get('/settings/clauses', [SettingsController::class, 'clauses'])->name('settings.clauses')->middleware('can:settings.clauses');
+    Route::post('/settings/clauses', [SettingsController::class, 'storeClause'])->name('settings.clauses.store')->middleware('can:settings.clauses');
+    Route::put('/settings/clauses/{clause}', [SettingsController::class, 'updateClause'])->name('settings.clauses.update')->middleware('can:settings.clauses');
+    Route::delete('/settings/clauses/{clause}', [SettingsController::class, 'deleteClause'])->name('settings.clauses.destroy')->middleware('can:settings.clauses');
 
-    Route::get('/settings/taxes', [SettingsController::class, 'taxes'])->name('settings.taxes');
-    Route::put('/settings/taxes', [SettingsController::class, 'updateTaxes'])->name('settings.taxes.update');
+    Route::get('/settings/taxes', [SettingsController::class, 'taxes'])->name('settings.taxes')->middleware('can:settings.taxes');
+    Route::put('/settings/taxes', [SettingsController::class, 'updateTaxes'])->name('settings.taxes.update')->middleware('can:settings.taxes');
 });

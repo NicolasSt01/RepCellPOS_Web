@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Tenant;
 use App\Models\TenantClause;
 use App\Models\User;
+use App\Services\R2StorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,18 +22,43 @@ class SettingsController extends Controller
         return view('settings.company', compact('tenant'));
     }
 
-    public function updateCompany(Request $request): RedirectResponse
+    public function updateCompany(Request $request, R2StorageService $r2): RedirectResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:500',
+            'social_media' => 'nullable|json',
+            'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        Auth::user()->tenant->update($validated);
+        $tenant = Auth::user()->tenant;
 
-        return redirect()->route('settings.company')->with('success', 'Datos de la empresa actualizados.');
+        $data = [
+            'name' => $validated['name'],
+            'phone' => $validated['phone'] ?? $tenant->phone,
+            'email' => $validated['email'] ?? $tenant->email,
+            'address' => $validated['address'] ?? $tenant->address,
+        ];
+
+        if ($request->hasFile('logo')) {
+            if ($tenant->logo) {
+                $r2->delete($tenant->logo);
+            }
+            $data['logo'] = $r2->upload($request->file('logo'), 'logos');
+        }
+
+        if ($request->filled('social_media')) {
+            $data['social_media'] = json_decode($validated['social_media'], true);
+        } elseif ($request->input('social_media') === null) {
+            $data['social_media'] = [];
+        }
+
+        $tenant->update($data);
+
+        return redirect()->route('settings.index')
+            ->with('success', 'Datos de la empresa actualizados correctamente.');
     }
 
     public function users(Request $request): View
@@ -66,13 +92,13 @@ class SettingsController extends Controller
 
         $user->assignRole($validated['role']);
 
-        return redirect()->route('settings.users')->with('success', "Usuario '{$user->name}' creado exitosamente.");
+        return redirect()->route('settings.index')->with('success', "Usuario '{$user->name}' creado exitosamente.");
     }
 
     public function updateUser(Request $request, User $user): RedirectResponse
     {
         if ($user->tenant_id !== Auth::user()->tenant_id) {
-            return redirect()->route('settings.users')->with('error', 'Acceso no autorizado.');
+            return redirect()->route('settings.index')->with('error', 'Acceso no autorizado.');
         }
 
         $validated = $request->validate([
@@ -88,23 +114,23 @@ class SettingsController extends Controller
 
         $user->syncRoles([$validated['role']]);
 
-        return redirect()->route('settings.users')->with('success', "Usuario '{$user->name}' actualizado.");
+        return redirect()->route('settings.index')->with('success', "Usuario '{$user->name}' actualizado.");
     }
 
     public function deleteUser(User $user): RedirectResponse
     {
         if ($user->tenant_id !== Auth::user()->tenant_id) {
-            return redirect()->route('settings.users')->with('error', 'Acceso no autorizado.');
+            return redirect()->route('settings.index')->with('error', 'Acceso no autorizado.');
         }
 
         if ($user->id === Auth::id()) {
-            return redirect()->route('settings.users')->with('error', 'No puedes eliminar tu propia cuenta.');
+            return redirect()->route('settings.index')->with('error', 'No puedes eliminar tu propia cuenta.');
         }
 
         $name = $user->name;
         $user->delete();
 
-        return redirect()->route('settings.users')->with('success', "Usuario '{$name}' eliminado.");
+        return redirect()->route('settings.index')->with('success', "Usuario '{$name}' eliminado.");
     }
 
     public function roles(): View
@@ -129,19 +155,35 @@ class SettingsController extends Controller
             $role->syncPermissions($validated['permissions']);
         }
 
-        return redirect()->route('settings.roles')->with('success', "Rol '{$role->name}' creado exitosamente.");
+        return redirect()->route('settings.index')->with('success', "Rol '{$role->name}' creado exitosamente.");
     }
 
     public function updateRole(Request $request, Role $role): RedirectResponse
     {
         $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,name',
         ]);
 
+        $role->update(['name' => $validated['name']]);
         $role->syncPermissions($validated['permissions'] ?? []);
 
-        return redirect()->route('settings.roles')->with('success', "Permisos del rol '{$role->name}' actualizados.");
+        return redirect()->route('settings.index')
+            ->with('success', 'Rol actualizado correctamente.');
+    }
+
+    public function deleteRole(Role $role): RedirectResponse
+    {
+        if ($role->name === 'super-admin') {
+            return redirect()->route('settings.index')
+                ->with('error', 'No se puede eliminar el rol super-admin.');
+        }
+
+        $role->delete();
+
+        return redirect()->route('settings.index')
+            ->with('success', 'Rol eliminado correctamente.');
     }
 
     public function clauses(): View
@@ -165,13 +207,13 @@ class SettingsController extends Controller
             'tenant_id' => Auth::user()->tenant_id,
         ]));
 
-        return redirect()->route('settings.clauses')->with('success', 'Cláusula creada exitosamente.');
+        return redirect()->route('settings.index')->with('success', 'Cláusula creada exitosamente.');
     }
 
     public function updateClause(Request $request, TenantClause $clause): RedirectResponse
     {
         if ($clause->tenant_id !== Auth::user()->tenant_id) {
-            return redirect()->route('settings.clauses')->with('error', 'Acceso no autorizado.');
+            return redirect()->route('settings.index')->with('error', 'Acceso no autorizado.');
         }
 
         $validated = $request->validate([
@@ -187,18 +229,29 @@ class SettingsController extends Controller
 
         $clause->update($validated);
 
-        return redirect()->route('settings.clauses')->with('success', 'Cláusula actualizada.');
+        return redirect()->route('settings.index')->with('success', 'Cláusula actualizada.');
     }
 
     public function deleteClause(TenantClause $clause): RedirectResponse
     {
         if ($clause->tenant_id !== Auth::user()->tenant_id) {
-            return redirect()->route('settings.clauses')->with('error', 'Acceso no autorizado.');
+            return redirect()->route('settings.index')->with('error', 'Acceso no autorizado.');
         }
 
         $clause->delete();
 
-        return redirect()->route('settings.clauses')->with('success', 'Cláusula eliminada.');
+        return redirect()->route('settings.index')->with('success', 'Cláusula eliminada.');
+    }
+
+    public function index(): View
+    {
+        $tenant = Auth::user()->tenant;
+        $users = User::where('tenant_id', $tenant->id)->with('roles')->orderBy('name')->get();
+        $roles = Role::with('permissions')->orderBy('name')->get();
+        $permissions = Permission::orderBy('name')->get();
+        $clauses = TenantClause::orderBy('sort_order')->get();
+
+        return view('settings.index', compact('tenant', 'users', 'roles', 'permissions', 'clauses'));
     }
 
     public function taxes(): View
@@ -221,6 +274,6 @@ class SettingsController extends Controller
 
         Auth::user()->tenant->update($validated);
 
-        return redirect()->route('settings.taxes')->with('success', 'Configuración actualizada.');
+        return redirect()->route('settings.index')->with('success', 'Configuración actualizada.');
     }
 }

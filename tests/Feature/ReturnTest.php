@@ -10,6 +10,7 @@ use App\Models\WasteRecord;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class ReturnTest extends TestCase
@@ -33,6 +34,9 @@ class ReturnTest extends TestCase
         $this->user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
         ]);
+
+        Permission::create(['guard_name' => 'web', 'name' => 'pos.access']);
+        $this->user->givePermissionTo('pos.access');
 
         $this->cashRegister = CashRegister::create([
             'tenant_id' => $this->tenant->id,
@@ -338,6 +342,7 @@ class ReturnTest extends TestCase
         $sale = $this->createSale();
 
         $this->actingAs($otherUser);
+        $otherUser->givePermissionTo('pos.access');
         $response = $this->post(route('returns.search_sale'), [
             'folio' => (string) $sale->id,
         ]);

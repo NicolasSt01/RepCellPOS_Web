@@ -227,11 +227,6 @@ class WorkOrderController extends Controller
             'comment' => 'nullable|string|max:1000',
         ]);
 
-        if (!$workOrder->canTransitionTo($validated['status'])) {
-            return redirect()->route('work_orders.show', $workOrder)
-                ->with('error', 'Transición de estado no válida.');
-        }
-
         $workOrder->update(['status' => $validated['status']]);
         $workOrder->addTimelineEvent(
             $validated['status'],

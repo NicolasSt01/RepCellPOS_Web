@@ -11,10 +11,11 @@
         @media print {
             body { background-color: white; }
             .print-container { margin: 0; padding: 10mm; box-shadow: none; max-width: 100%; }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
-<body onload="window.print()">
+<body onload="{{ ($preview ?? false) ? '' : 'window.print()' }}">
 
     <div class="print-container">
         <!-- Header -->
@@ -32,6 +33,12 @@
                 <p class="text-gray-600 mt-1">Folio: <span class="font-medium text-gray-900">#{{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</span></p>
                 <p class="text-gray-600">Fecha: <span class="font-medium text-gray-900">{{ $sale->created_at->format('d/m/Y H:i') }}</span></p>
                 <p class="text-gray-600">Atendido por: <span class="font-medium text-gray-900">{{ $sale->user->name }}</span></p>
+@php
+    $saleClient = $sale->workOrder?->client;
+@endphp
+@if($saleClient)
+    <p class="text-sm text-gray-600"><span class="font-semibold">Cliente:</span> {{ $saleClient->name }}@if($saleClient->phone) — {{ $saleClient->phone }}@endif</p>
+@endif
             </div>
         </div>
 
@@ -110,12 +117,26 @@
             </div>
         </div>
 
+@if(($clauses ?? null) && count($clauses) > 0)
+        <div class="mt-6 border-t border-gray-300 pt-4">
+            @foreach($clauses as $clause)
+                <p class="text-xs text-gray-500 mb-1">{{ $clause->content }}</p>
+            @endforeach
+        </div>
+@endif
+
         <!-- Footer -->
         <div class="mt-12 text-center text-sm text-gray-500 border-t pt-8">
             <p>¡Gracias por su preferencia!</p>
             <p class="mt-1 text-xs">Este documento es un comprobante de venta interno y no tiene validez fiscal oficial.</p>
         </div>
     </div>
+
+@if($preview ?? false)
+    <div class="no-print" style="text-align:center;margin-top:20px;font-family:sans-serif;">
+        <button onclick="window.print()" style="padding:10px 30px;font-size:16px;cursor:pointer;">🖨 Imprimir</button>
+    </div>
+@endif
 
 </body>
 </html>

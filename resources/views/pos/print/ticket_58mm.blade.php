@@ -29,12 +29,14 @@
         .item-row td { vertical-align: top; }
         
         @media print {
+            @page { margin: 0; size: 58mm auto; }
             body { margin: 0; padding: 0; }
             #print-button { display: none; }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
-<body onload="window.print()">
+<body onload="{{ ($preview ?? false) ? '' : 'window.print()' }}">
 
     <div class="text-center mb-2">
         <h2 class="font-bold" style="margin:0; font-size: 14px;">{{ $tenant->name }}</h2>
@@ -47,6 +49,13 @@
         <p style="margin:2px 0;">{{ $sale->created_at->format('d/m/Y H:i') }}</p>
         <p style="margin:2px 0;">Caj: {{ $sale->user->name }}</p>
     </div>
+
+@php
+    $saleClient = $sale->workOrder?->client;
+@endphp
+@if($saleClient)
+    <p style="font-size:9px;margin:4px 0 0 0;">Cliente: {{ $saleClient->name }}@if($saleClient->phone) — Tel: {{ $saleClient->phone }}@endif</p>
+@endif
 
     <table class="mb-2">
         <thead>
@@ -114,9 +123,22 @@
         @endif
     </div>
 
+@if(($clauses ?? null) && count($clauses) > 0)
+    <hr style="border-top:1px dashed #000;margin:8px 0;">
+    @foreach($clauses as $clause)
+        <p style="font-size:8px;margin:2px 0;text-align:center;">{{ $clause->content }}</p>
+    @endforeach
+@endif
+
     <div class="text-center mt-2 pt-2 border-t" style="font-size: 9px;">
         <p>¡Gracias por su compra!</p>
     </div>
+
+@if($preview ?? false)
+    <div class="no-print" style="text-align:center;margin-top:20px;font-family:sans-serif;">
+        <button onclick="window.print()" style="padding:10px 30px;font-size:16px;cursor:pointer;">🖨 Imprimir</button>
+    </div>
+@endif
 
 </body>
 </html>

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tenant extends Model
 {
@@ -51,6 +52,21 @@ class Tenant extends Model
     public function clauses(): HasMany
     {
         return $this->hasMany(TenantClause::class);
+    }
+
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(TenantSubscription::class);
+    }
+
+    public function workOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class);
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
     }
 
     public function incrementWorkOrderSequence(): int

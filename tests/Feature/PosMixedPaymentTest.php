@@ -19,6 +19,7 @@ class PosMixedPaymentTest extends TestCase
     private User $user;
     private CashRegister $cashRegister;
     private Product $product;
+    private Product $service;
 
     protected function setUp(): void
     {
@@ -52,6 +53,17 @@ class PosMixedPaymentTest extends TestCase
             'sale_price' => 100,
             'tax_percentage' => 16,
             'stock' => 50,
+            'is_active' => true,
+        ]);
+
+        $this->service = Product::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Servicio de Revisión',
+            'type' => 'servicio',
+            'purchase_price' => 0,
+            'sale_price' => 150,
+            'tax_percentage' => 16,
+            'stock' => 0,
             'is_active' => true,
         ]);
     }
@@ -375,5 +387,56 @@ class PosMixedPaymentTest extends TestCase
         $response = $this->get(route('pos.print', $sale));
         $response->assertOk();
         $response->assertSee('Ticket #' . $sale->id);
+    }
+
+    public function test_pos_index_has_services_in_products(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('pos.index'));
+
+        $response->assertOk();
+
+        $content = $response->getContent();
+
+        // Service type must appear in the data
+        $this->assertStringContainsString('"type":"servicio"', $content);
+
+        // Service must have sale_price and stock=0 in the JSON data
+        $this->assertStringContainsString('"sale_price":"150.00"', $content);
+        $this->assertStringContainsString('"stock":0', $content);
+
+        // Ensure service products appear (name may be \u escaped so check partial)
+        $this->assertStringContainsString('Servicio de Revisi', $content);
+    }
+
+    public function test_pos_can_checkout_service(): void
+    {
+        $response = $this->actingAs($this->user)->post(route('pos.checkout'), [
+            'items' => [
+                [
+                    'product_id' => $this->service->id,
+                    'type' => 'servicio',
+                    'description' => $this->service->name,
+                    'quantity' => 1,
+                    'unit_price' => $this->service->sale_price,
+                    'tax_percentage' => $this->service->tax_percentage,
+                ],
+            ],
+            'payment_method' => 'efectivo',
+            'amount_received' => 200,
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('sales', ['tenant_id' => $this->tenant->id]);
+
+        $sale = Sale::where('tenant_id', $this->tenant->id)->with('saleItems')->first();
+        $this->assertNotNull($sale);
+        $this->assertNotNull($sale->saleItems);
+        $this->assertCount(1, $sale->saleItems);
+
+        $saleItem = $sale->saleItems->first();
+        $this->assertEquals('servicio', $saleItem->type);
+        $this->assertEquals('Servicio de Revisión', $saleItem->description);
+        $this->assertEquals(150.00, $saleItem->unit_price);
     }
 }

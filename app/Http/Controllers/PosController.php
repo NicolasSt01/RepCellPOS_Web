@@ -50,7 +50,6 @@ class PosController extends Controller
         } else {
             $topProducts = Product::where('tenant_id', $tenant->id)
                 ->where('is_active', true)
-                ->where('type', 'producto')
                 ->orderBy('name')
                 ->take(15)
                 ->get();
@@ -58,7 +57,6 @@ class PosController extends Controller
 
         $products = Product::where('tenant_id', $tenant->id)
             ->where('is_active', true)
-            ->where('type', 'producto')
             ->get();
 
         $cashRegister = CashRegister::where('tenant_id', $tenant->id)

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\R2StorageService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Picqer\Barcode\BarcodeGeneratorPNG;
 
 class ProductController extends Controller
 {
@@ -64,6 +66,7 @@ class ProductController extends Controller
             'has_tax' => 'boolean',
             'tax_percentage' => 'numeric|min:0|max:100',
             'barcode' => 'nullable|string|max:255',
+            'barcode_generated' => 'nullable|boolean',
             'compatible_brand' => 'nullable|string|max:255',
             'compatible_model' => 'nullable|string|max:255',
             'image' => 'nullable|image|max:5120',
@@ -80,7 +83,16 @@ class ProductController extends Controller
             $validated['image_url'] = $r2->upload($request->file('image'), 'products');
         }
 
-        Product::create($validated);
+        $product = Product::create($validated);
+
+        if ($request->boolean('barcode_generated') && $product->barcode) {
+            session()->flash('barcode_label', [
+                'id' => $product->id,
+                'name' => $product->name,
+                'barcode' => $product->barcode,
+                'stock' => $product->stock,
+            ]);
+        }
 
         return redirect()->route('products.index')->with('success', 'Producto creado exitosamente.');
     }
@@ -151,6 +163,22 @@ class ProductController extends Controller
         $product->delete();
 
         return redirect()->route('products.index')->with('success', 'Producto eliminado exitosamente.');
+    }
+
+    public function printLabels(Request $request, Product $product): \Illuminate\Http\Response
+    {
+        $data = $request->validate([
+            'quantity' => 'required|integer|min:1|max:200',
+        ]);
+
+        $quantity = (int) $data['quantity'];
+        $generator = new BarcodeGeneratorPNG();
+        $barcodeBase64 = base64_encode($generator->getBarcode($product->barcode, $generator::TYPE_CODE_128, 2, 60));
+
+        $pdf = Pdf::loadView('products.labels-pdf', compact('product', 'barcodeBase64', 'quantity'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download("etiquetas-{$product->barcode}-{$quantity}pzas.pdf");
     }
 
     public function adjustStock(Request $request, Product $product): RedirectResponse

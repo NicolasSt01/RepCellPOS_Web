@@ -12,6 +12,8 @@ class WorkOrderFactory extends Factory
     public function definition(): array
     {
         return [
+            'client_id' => \App\Models\Client::factory(),
+            'user_id' => \App\Models\User::factory(),
             'device_brand' => fake()->randomElement(['Apple', 'Samsung', 'Xiaomi', 'Motorola']),
             'device_model' => fake()->bothify('Model ??###'),
             'device_serial' => fake()->bothify('SN####??##'),

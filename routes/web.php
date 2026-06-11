@@ -11,6 +11,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\WorkOrderController;
@@ -29,7 +30,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [TenantController::class, 'register']);
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'not-superadmin'])->group(function () {
     Route::get('/r2/{path}', function ($path) {
         if (!\Illuminate\Support\Facades\Storage::disk('r2')->exists($path)) {
             abort(404);
@@ -59,6 +60,7 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('products', ProductController::class);
     Route::post('/products/{product}/adjust_stock', [ProductController::class, 'adjustStock'])->name('products.adjust_stock');
+    Route::post('/products/{product}/print-labels', [ProductController::class, 'printLabels'])->name('products.print_labels');
 
     Route::get('/work_orders/{work_order}/quote', [QuoteController::class, 'show'])->name('quotes.show');
     Route::post('/quotes/{quote}/add_item', [QuoteController::class, 'addItem'])->name('quotes.add_item');
@@ -107,4 +109,18 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/settings/taxes', [SettingsController::class, 'taxes'])->name('settings.taxes')->middleware('can:settings.taxes');
     Route::put('/settings/taxes', [SettingsController::class, 'updateTaxes'])->name('settings.taxes.update')->middleware('can:settings.taxes');
+});
+
+Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [SuperAdminController::class, 'dashboard'])->name('dashboard');
+
+    Route::get('tenants', [App\Http\Controllers\SuperAdminController::class, 'tenants'])->name('tenants.index');
+    Route::get('tenants/{tenant}', [App\Http\Controllers\SuperAdminController::class, 'tenantDetail'])->name('tenants.show');
+    Route::post('tenants/{tenant}/toggle-status', [App\Http\Controllers\SuperAdminController::class, 'toggleTenantStatus'])->name('tenants.toggle-status');
+
+    Route::get('tenants/{tenant}/subscriptions/create', [App\Http\Controllers\SuperAdminController::class, 'subscriptionCreate'])->name('subscriptions.create');
+    Route::post('tenants/{tenant}/subscriptions', [App\Http\Controllers\SuperAdminController::class, 'subscriptionStore'])->name('subscriptions.store');
+    Route::get('tenants/{tenant}/subscriptions/{subscription}/edit', [App\Http\Controllers\SuperAdminController::class, 'subscriptionEdit'])->name('subscriptions.edit');
+    Route::put('tenants/{tenant}/subscriptions/{subscription}', [App\Http\Controllers\SuperAdminController::class, 'subscriptionUpdate'])->name('subscriptions.update');
+    Route::post('tenants/{tenant}/subscriptions/{subscription}/pay', [App\Http\Controllers\SuperAdminController::class, 'subscriptionPay'])->name('subscriptions.pay');
 });

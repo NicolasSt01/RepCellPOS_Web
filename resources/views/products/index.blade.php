@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" x-data="barcodeLabels()">
     <div class="sm:flex sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Productos y Servicios</h1>
@@ -117,5 +117,88 @@
         <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-3">{{ $products->links() }}</div>
         @endif
     </div>
+
+    {{-- Session flash data to detect barcode label flow --}}
+    @if(session()->has('barcode_label'))
+    <div x-init="barcodeData = {{ json_encode(session('barcode_label')) }}; showPrintModal = true"></div>
+    @endif
+
+    {{-- MODAL 1: ¿Imprimir etiquetas? --}}
+    <div x-show="showPrintModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showPrintModal = false"></div>
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+                <div class="text-5xl mb-4">🏷️</div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">¿Imprimir etiquetas?</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    El producto <strong class="text-gray-700 dark:text-gray-300" x-text="barcodeData.name"></strong>
+                    tiene un código de barras interno.
+                </p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mb-6">Puedes imprimir etiquetas adhesivas para colocarlas en tus productos.</p>
+                <div class="flex justify-center gap-3">
+                    <button @click="showPrintModal = false; printLater()"
+                        class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        Ahora no
+                    </button>
+                    <button @click="showPrintModal = false; showQuantityModal = true"
+                        class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                        Sí, imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- MODAL 2: Cantidad de etiquetas --}}
+    <div x-show="showQuantityModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showQuantityModal = false"></div>
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-8">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">¿Cuántas etiquetas?</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Se generará un PDF con todas las etiquetas para imprimir en hoja A4.</p>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <button type="button" @click="labelQty = Math.max(1, labelQty - 1)"
+                            class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-lg font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">−</button>
+                        <input type="number" x-model.number="labelQty" min="1" max="200"
+                            class="block w-24 text-center rounded-md border-0 py-2 px-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 text-lg font-bold sm:text-sm sm:leading-6">
+                        <button type="button" @click="labelQty = Math.min(200, labelQty + 1)"
+                            class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-lg font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">+</button>
+                    </div>
+                    <p class="text-xs text-gray-400 text-center" x-show="labelQty === 1">Se generará <strong>1</strong> etiqueta</p>
+                    <p class="text-xs text-gray-400 text-center" x-show="labelQty > 1" x-text="`Se generarán ${labelQty} etiquetas`"></p>
+                    <form method="POST" x-bind:action="`/products/${barcodeData.id}/print-labels`" class="pt-4">
+                        <input type="hidden" name="quantity" x-model="labelQty">
+                        <div class="flex justify-center gap-3">
+                            <button type="button" @click="showQuantityModal = false"
+                                class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="submit"
+                                class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                                📥 Generar PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('barcodeLabels', () => ({
+        showPrintModal: false,
+        showQuantityModal: false,
+        barcodeData: { id: 0, name: '', barcode: '', stock: 0 },
+        labelQty: 0,
+        printLater() {
+            this.showPrintModal = false;
+        }
+    }));
+});
+</script>
+@endpush
 @endsection

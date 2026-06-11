@@ -357,16 +357,24 @@
                             <label for="barcode" class="block text-sm font-medium text-gray-900 dark:text-gray-100">
                                 Código de Barras
                             </label>
-                            <div class="relative rounded-md shadow-sm">
-                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v14.25c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 19.125V4.875zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v14.25c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 19.125V4.875z" />
-                                    </svg>
+                            <div class="flex gap-2">
+                                <div class="relative flex-1 rounded-md shadow-sm">
+                                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v14.25c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 19.125V4.875zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v14.25c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 19.125V4.875z" />
+                                        </svg>
+                                    </div>
+                                    <input type="text" id="barcode" name="barcode" x-model="barcode" placeholder="Pasa el escáner aquí"
+                                           class="block w-full rounded-md border-0 py-2 pl-10 pr-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
                                 </div>
-                                <input type="text" id="barcode" name="barcode" x-model="barcode" placeholder="Pasa el escáner aquí"
-                                       class="block w-full rounded-md border-0 py-2 pl-10 pr-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                                <button type="button" @click="generateBarcode()"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-colors whitespace-nowrap">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" /></svg>
+                                    Generar
+                                </button>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Haz clic aquí y luego escanea la etiqueta con tu lector de códigos de barra.</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Escanea con tu lector o genera un código interno automático.</p>
+                            <input type="hidden" name="barcode_generated" :value="barcodeGenerated ? '1' : '0'">
                         </div>
                     </div>
                 </div>
@@ -471,6 +479,7 @@ document.addEventListener('alpine:init', () => {
         // Product fields (Step 3)
         code: '{{ old('code', '') }}',
         barcode: '{{ old('barcode', '') }}',
+        barcodeGenerated: false,
         part_number: '{{ old('part_number', '') }}',
         stock: {{ old('stock', 0) }},
         min_stock: {{ old('min_stock', 0) }},
@@ -577,6 +586,13 @@ document.addEventListener('alpine:init', () => {
             } else {
                 this.imagePreview = null;
             }
+        },
+
+        generateBarcode() {
+            const now = Date.now().toString(36).toUpperCase();
+            const rand = Math.floor(Math.random() * 1000000).toString(36).toUpperCase().padStart(4, '0');
+            this.barcode = `INT${now}${rand}`;
+            this.barcodeGenerated = true;
         }
     }));
 });

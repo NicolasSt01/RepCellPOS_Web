@@ -25,7 +25,8 @@ COPY entrypoint.sh /entrypoint.sh
 WORKDIR /var/www/html
 
 RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
-    && cp .env.example .env \
+    && echo "APP_KEY=base64:buildtimeplaceholder12345678901234567890==" > .env \
+    && echo "APP_ENV=production" >> .env \
     && php artisan storage:link \
     && chmod -R 775 storage bootstrap/cache \
     && chmod +x /entrypoint.sh \

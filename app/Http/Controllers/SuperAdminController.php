@@ -66,7 +66,7 @@ class SuperAdminController extends Controller
         $pendingRevenue = TenantSubscription::where('status', 'pendiente')->sum('amount');
         $mrr = TenantSubscription::where('status', 'activa')->sum('amount');
 
-        $monthlyCollection = TenantSubscription::selectRaw("strftime('%Y-%m', created_at) as month, SUM(amount) as total")
+        $monthlyCollection = TenantSubscription::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total")
             ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('month')
             ->orderBy('month')

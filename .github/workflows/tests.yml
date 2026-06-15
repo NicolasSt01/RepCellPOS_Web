@@ -22,13 +22,13 @@ jobs:
           tools: composer:v2
 
       - name: Check Composer
-        run: composer --version
+        run: composer --version && ls -la composer.json composer.lock
 
       - name: Copy .env
         run: cp .env.example .env
 
       - name: Install Dependencies
-        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        run: composer install --no-scripts --no-interaction --no-progress 2>&1
 
       - name: Generate key
         run: php artisan key:generate

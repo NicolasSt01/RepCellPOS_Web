@@ -11,6 +11,18 @@ RUN composer install \
     --optimize-autoloader \
     --prefer-dist
 
+FROM node:22-alpine AS frontend
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
+
+COPY vite.config.js ./
+COPY resources/ ./resources/
+
+RUN npm run build
+
 FROM php:8.3-apache AS final
 
 RUN apt-get update && apt-get install -y \
@@ -19,6 +31,7 @@ RUN apt-get update && apt-get install -y \
     && a2enmod rewrite
 
 COPY --from=vendor /app/vendor /var/www/html/vendor
+COPY --from=frontend /app/public/build /var/www/html/public/build
 COPY . /var/www/html
 COPY entrypoint.sh /entrypoint.sh
 

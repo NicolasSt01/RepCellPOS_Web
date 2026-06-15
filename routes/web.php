@@ -17,9 +17,7 @@ use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\WorkOrderController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('landing');
-})->name('landing');
+Route::get('/', [App\Http\Controllers\LandingController::class, 'index'])->name('landing');
 
 Route::get('/seguimiento/{token}', [TrackingController::class, 'show'])->name('tracking.show');
 
@@ -33,7 +31,14 @@ Route::middleware('guest')->group(function () {
 // Logout must be accessible to all authenticated users including superadmin
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Subscription upgrade routes — accessible without subscription.active check
 Route::middleware(['auth', 'not-superadmin'])->group(function () {
+    Route::get('/upgrade', [\App\Http\Controllers\SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
+    Route::post('/upgrade/select', [\App\Http\Controllers\SubscriptionController::class, 'selectPlan'])->name('subscription.select');
+    Route::post('/upgrade/payment-proof', [\App\Http\Controllers\SubscriptionController::class, 'uploadProof'])->name('subscription.payment-proof');
+});
+
+Route::middleware(['auth', 'not-superadmin', 'subscription.active'])->group(function () {
     Route::get('/r2/{path}', function ($path) {
         if (!\Illuminate\Support\Facades\Storage::disk('r2')->exists($path)) {
             abort(404);
@@ -116,7 +121,7 @@ Route::middleware(['auth', 'not-superadmin'])->group(function () {
     Route::put('/settings/taxes', [SettingsController::class, 'updateTaxes'])->name('settings.taxes.update')->middleware('can:settings.taxes');
 
     Route::post('/settings/notifications/templates', [SettingsController::class, 'updateNotificationTemplate'])->name('settings.notifications.templates.update')->middleware('can:settings.company');
-});
+}); // ends subscription.active group
 
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [SuperAdminController::class, 'dashboard'])->name('dashboard');
@@ -130,4 +135,9 @@ Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->grou
     Route::get('tenants/{tenant}/subscriptions/{subscription}/edit', [App\Http\Controllers\SuperAdminController::class, 'subscriptionEdit'])->name('subscriptions.edit');
     Route::put('tenants/{tenant}/subscriptions/{subscription}', [App\Http\Controllers\SuperAdminController::class, 'subscriptionUpdate'])->name('subscriptions.update');
     Route::post('tenants/{tenant}/subscriptions/{subscription}/pay', [App\Http\Controllers\SuperAdminController::class, 'subscriptionPay'])->name('subscriptions.pay');
+
+    Route::get('finances', [App\Http\Controllers\SuperAdminController::class, 'finances'])->name('finances');
+    Route::post('finances/confirm/{id}', [App\Http\Controllers\SuperAdminController::class, 'confirmPayment'])->name('finances.confirm');
+    Route::post('finances/reject/{id}', [App\Http\Controllers\SuperAdminController::class, 'rejectPayment'])->name('finances.reject');
+    Route::get('finances/export', [App\Http\Controllers\SuperAdminController::class, 'exportFinances'])->name('finances.export');
 });

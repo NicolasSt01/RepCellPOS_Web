@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'superadmin' => \App\Http\Middleware\CheckSuperAdmin::class,
             'not-superadmin' => \App\Http\Middleware\CheckNotSuperAdmin::class,
+            'subscription.active' => \App\Http\Middleware\CheckTenantSubscription::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

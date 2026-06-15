@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -34,6 +35,9 @@ class Tenant extends Model
         'mail_from_address',
         'mail_from_name',
         'whatsapp_webhook_url',
+        'plan_id',
+        'trial_ends_at',
+        'subscription_status',
     ];
 
     protected function casts(): array
@@ -45,7 +49,13 @@ class Tenant extends Model
             'work_order_sequence' => 'integer',
             'is_active' => 'boolean',
             'mail_password' => 'encrypted',
+            'trial_ends_at' => 'datetime',
         ];
+    }
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
     }
 
     public function users(): HasMany

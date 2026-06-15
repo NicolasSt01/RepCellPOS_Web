@@ -9,6 +9,7 @@ class TenantSubscription extends Model
 {
     protected $fillable = [
         'tenant_id',
+        'plan_id',
         'plan_type',
         'amount',
         'start_date',
@@ -18,6 +19,8 @@ class TenantSubscription extends Model
         'next_payment_date',
         'payment_history',
         'notes',
+        'paid_via',
+        'payment_proof',
     ];
 
     protected function casts(): array
@@ -35,6 +38,11 @@ class TenantSubscription extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
     }
 
     public function isActive(): bool

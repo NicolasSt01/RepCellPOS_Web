@@ -7,7 +7,131 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Panel Superadmin</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Métricas globales del ecosistema RepCellPOS</p>
         </div>
+        <div class="flex gap-3">
+            <a href="{{ route('admin.finances') }}"
+               class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Finanzas
+            </a>
+        </div>
     </div>
+
+    <!-- Subscription Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <dl>
+                    <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Total Tenants</dt>
+                    <dd class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ $totalTenants }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <dl>
+                    <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Activos</dt>
+                    <dd class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">{{ $activeTenants }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <dl>
+                    <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">En Prueba</dt>
+                    <dd class="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $trialTenants }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <dl>
+                    <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Prueba Vencida</dt>
+                    <dd class="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">{{ $expiredTrials }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <dl>
+                    <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Suscripciones Activas</dt>
+                    <dd class="mt-1 text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ $activeSubscriptions }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-5">
+                <dl>
+                    <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">MRR</dt>
+                    <dd class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">${{ number_format($monthlyRevenue, 2) }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Payments -->
+    @if($pendingPayments->count() > 0)
+    <div class="bg-white dark:bg-gray-800 shadow-sm border border-amber-200 dark:border-amber-700 rounded-2xl overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10">
+            <h2 class="text-lg font-semibold text-amber-800 dark:text-amber-300">Pagos Pendientes ({{ $pendingPayments->count() }})</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tenant</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Monto</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Método</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                    @foreach($pendingPayments as $payment)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-900/25 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $payment->tenant?->name ?? 'N/A' }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                ${{ number_format($payment->amount, 2) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ $payment->paid_via ?? 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex gap-2">
+                                    <form action="{{ route('admin.finances.confirm', $payment->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit"
+                                                class="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-green-500">
+                                            Confirmar
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('admin.finances.reject', $payment->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit"
+                                                class="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-500">
+                                            Rechazar
+                                        </button>
+                                    </form>
+                                    <a href="{{ route('admin.finances') }}"
+                                       class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                                        Ver todo
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
 
     <!-- Stat Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

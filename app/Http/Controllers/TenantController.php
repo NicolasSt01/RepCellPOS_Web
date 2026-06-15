@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -35,6 +36,9 @@ class TenantController extends Controller
                 'slug' => Str::slug($validated['business_name']) . '-' . Str::random(4),
                 'phone' => $validated['business_phone'],
                 'is_active' => true,
+                'plan_id' => Plan::where('slug', 'premium')->first()->id,
+                'trial_ends_at' => now()->addDays(7),
+                'subscription_status' => 'trial',
             ]);
 
             $user = User::create([

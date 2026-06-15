@@ -500,6 +500,105 @@
         @endcan
     </div>
 
+        {{-- STEP 6: NOTIFICACIONES --}}
+        @can('settings.company')
+        <div x-show="activeStep === 5" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">6</div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Plantillas de Notificación</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Personaliza los mensajes que se envían a los clientes por correo o WhatsApp</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    @php
+                        $events = [
+                            'order_created' => 'Orden creada',
+                            'diagnosis_completed' => 'Diagnóstico completado',
+                            'quote_sent' => 'Cotización enviada',
+                            'quote_approved' => 'Cotización aprobada',
+                            'quote_rejected' => 'Cotización rechazada',
+                            'repair_completed' => 'Reparación completada',
+                            'ready_for_pickup' => 'Listo para recoger',
+                        ];
+                        $channels = ['email' => 'Correo', 'whatsapp' => 'WhatsApp'];
+                        $placeholders = '{work_order_number}, {client_name}, {tracking_url}';
+                    @endphp
+
+                    @foreach($events as $eventKey => $eventLabel)
+                        @foreach($channels as $channelKey => $channelLabel)
+                            @php
+                                $template = $templates->firstWhere(fn($t) => $t->event === $eventKey && $t->channel === $channelKey);
+                            @endphp
+                            <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                                <div class="p-5">
+                                    <form method="POST" action="{{ route('settings.notifications.templates.update') }}" class="space-y-4">
+                                        @csrf
+                                        <input type="hidden" name="event" value="{{ $eventKey }}">
+                                        <input type="hidden" name="channel" value="{{ $channelKey }}">
+
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="flex items-center gap-3">
+                                                <span class="inline-flex items-center rounded-md px-2.5 py-1 text-sm font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
+                                                    {{ $eventLabel }}
+                                                </span>
+                                                <span class="inline-flex items-center rounded-md px-2.5 py-1 text-sm font-medium {{ $channelKey === 'email' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' }}">
+                                                    {{ $channelLabel }}
+                                                </span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <label class="text-sm text-gray-500 dark:text-gray-400">Activa</label>
+                                                <input type="hidden" name="is_active" value="0">
+                                                <input type="checkbox" name="is_active" value="1" {{ $template?->is_active ? 'checked' : '' }}
+                                                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-600 dark:bg-gray-700">
+                                            </div>
+                                        </div>
+
+                                        @if($channelKey === 'email')
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Asunto</label>
+                                            <input type="text" name="subject" value="{{ old('subject', $template?->subject ?? '') }}" placeholder="Ej: Tu orden {{ $eventLabel }}"
+                                                class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                                        </div>
+                                        @endif
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                                                Mensaje
+                                                <span class="text-xs text-gray-400 ml-2">Placeholders: {{ $placeholders }}</span>
+                                            </label>
+                                            <textarea name="body" rows="3" required
+                                                placeholder="Ej: Hola {client_name}, tu orden {work_order_number} ha sido actualizada. {{ $trackingUrl ?? '' }}"
+                                                class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">{{ old('body', $template?->body ?? '') }}</textarea>
+                                        </div>
+
+                                        <div class="flex justify-end">
+                                            <button type="submit"
+                                                class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                                                💾 {{ $template ? 'Actualizar' : 'Crear' }}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    @endforeach
+                </div>
+
+                <div class="flex justify-between pt-4 mt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" @click="activeStep = 4" class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        ← Anterior
+                    </button>
+                    <button type="button" @click="activeStep = 0" class="inline-flex items-center rounded-md bg-green-100 dark:bg-green-900/30 px-4 py-2 text-sm font-semibold text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                        ✓ Completado
+                    </button>
+                </div>
+            </div>
+        </div>
+        @endcan
+
     {{-- MODAL: Create User --}}
     <div x-show="showCreateUser" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -702,7 +801,7 @@
 <script>
 function settingsApp() {
     return {
-        steps: ['Mi Taller', 'Tu Equipo', 'Roles', 'Impuestos', 'Cláusulas'],
+        steps: ['Mi Taller', 'Tu Equipo', 'Roles', 'Impuestos', 'Cláusulas', 'Notificaciones'],
         activeStep: 0,
         showCreateUser: false,
         showEditUser: false,

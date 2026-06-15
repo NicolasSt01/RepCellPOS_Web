@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Client;
 use App\Models\Notification;
+use App\Models\NotificationTemplate;
 use App\Models\WorkOrder;
 
 class NotificationService
@@ -16,7 +17,8 @@ class NotificationService
             return null;
         }
 
-        $message = $customMessage ?? $this->getDefaultMessage($event, $workOrder);
+        $channel = $client->notification_preference;
+        $message = $customMessage ?? $this->getMessage($event, $workOrder, $channel);
         $trackingToken = $workOrder->tracking_token ?? Notification::generateTrackingToken();
 
         if (!$workOrder->tracking_token) {
@@ -57,21 +59,71 @@ class NotificationService
         }
 
         try {
-            // TODO: Implementar envío real via Mail
-            $notification->markAsSent('Email queued');
+            $tenant = $workOrder->tenant;
+            if (!$tenant->mail_host || !$tenant->mail_username || !$tenant->mail_password) {
+                $notification->markAsLogged('SMTP no configurado');
+                return;
+            }
+
+            app(TenantMailService::class)->configureForTenant($tenant);
+
+            $mailable = match ($notification->event) {
+                'order_created' => new \App\Mail\WorkOrderReceipt($workOrder, $tenant),
+                default => new \App\Mail\WorkOrderReceipt($workOrder, $tenant),
+            };
+
+            \Illuminate\Support\Facades\Mail::to($client->email)->send($mailable);
+            $notification->markAsSent('Email sent successfully');
         } catch (\Exception $e) {
             $notification->markAsFailed($e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error sending notification email: ' . $e->getMessage());
         }
     }
 
     protected function sendWhatsapp(Notification $notification, Client $client, WorkOrder $workOrder): void
     {
         try {
-            // TODO: Implementar integración con WhatsApp Business API / n8n webhook
-            $notification->markAsSent('WhatsApp queued');
+            $tenant = $workOrder->tenant;
+            $webhookUrl = $tenant->whatsapp_webhook_url;
+
+            if (!$webhookUrl) {
+                $notification->markAsLogged('WhatsApp webhook no configurado');
+                return;
+            }
+
+            $phone = preg_replace('/[^0-9]/', '', $client->phone);
+            if (!$phone) {
+                $notification->markAsFailed('Cliente sin teléfono válido');
+                return;
+            }
+
+            $message = $notification->message;
+
+            \Illuminate\Support\Facades\Http::post($webhookUrl, [
+                'phone' => $phone,
+                'message' => $message,
+                'work_order_id' => $workOrder->id,
+                'work_order_number' => $workOrder->work_order_number,
+                'event' => $notification->event,
+                'tenant_id' => $tenant->id,
+            ]);
+
+            $notification->markAsSent('WhatsApp message queued to n8n');
         } catch (\Exception $e) {
             $notification->markAsFailed($e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error sending WhatsApp notification: ' . $e->getMessage());
         }
+    }
+
+    protected function getMessage(string $event, WorkOrder $workOrder, string $channel): string
+    {
+        $template = NotificationTemplate::getTemplate($workOrder->tenant_id, $event, $channel);
+
+        if ($template) {
+            return $template->replacePlaceholders($workOrder);
+        }
+
+        return $this->getDefaultMessage($event, $workOrder);
     }
 
     protected function getDefaultMessage(string $event, WorkOrder $workOrder): string

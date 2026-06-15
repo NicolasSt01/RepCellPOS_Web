@@ -59,11 +59,12 @@ class Notification extends Model
         ]);
     }
 
-    public function markAsLogged(): void
+    public function markAsLogged(?string $response = null): void
     {
         $this->update([
             'status' => 'logged',
             'sent_at' => now(),
+            'response' => $response,
         ]);
     }
 

@@ -72,6 +72,7 @@ Route::middleware(['auth', 'not-superadmin'])->group(function () {
     Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
     Route::post('/quotes/{quote}/approve', [QuoteController::class, 'approve'])->name('quotes.approve');
     Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+    Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf'])->name('quotes.pdf');
 
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
@@ -113,6 +114,8 @@ Route::middleware(['auth', 'not-superadmin'])->group(function () {
 
     Route::get('/settings/taxes', [SettingsController::class, 'taxes'])->name('settings.taxes')->middleware('can:settings.taxes');
     Route::put('/settings/taxes', [SettingsController::class, 'updateTaxes'])->name('settings.taxes.update')->middleware('can:settings.taxes');
+
+    Route::post('/settings/notifications/templates', [SettingsController::class, 'updateNotificationTemplate'])->name('settings.notifications.templates.update')->middleware('can:settings.company');
 });
 
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {

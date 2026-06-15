@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\WorkOrder;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +73,12 @@ class QuoteController extends Controller
         $quote->workOrder->update(['status' => 'cotizacion_enviada']);
         $quote->workOrder->addTimelineEvent('cotizacion_enviada', auth()->user()->name, 'Cotización enviada al cliente');
 
+        try {
+            app(\App\Services\NotificationService::class)->send($quote->workOrder, 'quote_sent');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error sending quote notification: ' . $e->getMessage());
+        }
+
         return redirect()->route('work_orders.show', $quote->workOrder)
             ->with('success', 'Cotización enviada al cliente.');
     }
@@ -120,5 +127,19 @@ class QuoteController extends Controller
 
         return redirect()->route('work_orders.show', $quote->workOrder)
             ->with('success', 'Cotización rechazada. Orden cancelada.');
+    }
+
+    public function downloadPdf(Quote $quote)
+    {
+        abort_if($quote->tenant_id !== auth()->user()->tenant_id, 403);
+
+        $quote->load(['quoteItems', 'workOrder.client', 'tenant']);
+        $tenant = $quote->tenant;
+
+        $html = view('quotes.print.a4', compact('quote', 'tenant'))->render();
+        $pdf = Pdf::loadHTML($html);
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download("cotizacion-{$quote->workOrder->work_order_number}.pdf");
     }
 }

@@ -41,6 +41,9 @@
                 Cobrar desde POS
             </a>
             @endif
+            <a href="{{ route('quotes.pdf', $quote) }}" class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                Descargar PDF
+            </a>
             <a href="{{ route('work_orders.show', $workOrder) }}" class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                 Volver a orden
             </a>

@@ -120,7 +120,11 @@
 @if(($clauses ?? null) && count($clauses) > 0)
         <div class="mt-6 border-t border-gray-300 pt-4">
             @foreach($clauses as $clause)
-                <p class="text-xs text-gray-500 mb-1">{{ $clause->content }}</p>
+                @if($clause->has_file)
+                    <p class="text-xs text-gray-500 mb-1"><a href="{{ $clause->file_url }}" target="_blank" class="text-indigo-600 hover:text-indigo-500 underline">Ver política: {{ $clause->file_name }}</a></p>
+                @else
+                    <p class="text-xs text-gray-500 mb-1">{{ $clause->content }}</p>
+                @endif
             @endforeach
         </div>
 @endif

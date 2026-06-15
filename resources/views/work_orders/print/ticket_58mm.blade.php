@@ -66,7 +66,14 @@
         <div class="divider"></div>
         <div class="section-title">Términos y Condiciones</div>
         @foreach($clauses as $clause)
-            <div class="clauses"><strong>{{ $clause->title }}:</strong> {{ $clause->content }}</div>
+            <div class="clauses">
+                <strong>{{ $clause->title }}:</strong>
+                @if($clause->has_file)
+                    <a href="{{ $clause->file_url }}" target="_blank" style="color:#2563eb;text-decoration:underline;">Ver política</a>
+                @else
+                    {{ $clause->content }}
+                @endif
+            </div>
         @endforeach
     @endif
 

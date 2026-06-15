@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\NotificationTemplate;
 use App\Models\Tenant;
 use App\Models\TenantClause;
 use App\Models\User;
@@ -10,6 +11,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -213,12 +217,30 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'content' => 'nullable|string|required_without:file',
             'type' => 'required|in:terms,warranty,privacy,return,other',
             'print_on_receipt' => 'boolean',
+            'file' => 'nullable|file|mimes:pdf|max:10240|required_without:content',
         ]);
 
         $validated['print_on_receipt'] = $request->boolean('print_on_receipt');
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $extension = $file->getClientOriginalExtension() ?: 'pdf';
+            $filename = Str::uuid() . '.' . $extension;
+            $path = 'clauses/' . date('Y/m') . '/' . $filename;
+
+            Storage::disk('r2')->put($path, $file->getContent(), [
+                'visibility' => 'public',
+                'ContentType' => $file->getMimeType(),
+            ]);
+
+            $validated['file_path'] = $path;
+            $validated['file_name'] = $file->getClientOriginalName();
+            $validated['file_url'] = route('r2.serve', ['path' => $path]);
+            $validated['has_file'] = true;
+        }
 
         TenantClause::create(array_merge($validated, [
             'tenant_id' => Auth::user()->tenant_id,
@@ -235,14 +257,36 @@ class SettingsController extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'content' => 'nullable|string',
             'type' => 'required|in:terms,warranty,privacy,return,other',
             'is_active' => 'boolean',
             'print_on_receipt' => 'boolean',
+            'file' => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['print_on_receipt'] = $request->boolean('print_on_receipt');
+
+        if ($request->hasFile('file')) {
+            if ($clause->file_path) {
+                Storage::disk('r2')->delete($clause->file_path);
+            }
+
+            $file = $request->file('file');
+            $extension = $file->getClientOriginalExtension() ?: 'pdf';
+            $filename = Str::uuid() . '.' . $extension;
+            $path = 'clauses/' . date('Y/m') . '/' . $filename;
+
+            Storage::disk('r2')->put($path, $file->getContent(), [
+                'visibility' => 'public',
+                'ContentType' => $file->getMimeType(),
+            ]);
+
+            $validated['file_path'] = $path;
+            $validated['file_name'] = $file->getClientOriginalName();
+            $validated['file_url'] = route('r2.serve', ['path' => $path]);
+            $validated['has_file'] = true;
+        }
 
         $clause->update($validated);
 
@@ -253,6 +297,10 @@ class SettingsController extends Controller
     {
         if ($clause->tenant_id !== Auth::user()->tenant_id) {
             return redirect()->route('settings.index')->with('error', 'Acceso no autorizado.');
+        }
+
+        if ($clause->file_path) {
+            Storage::disk('r2')->delete($clause->file_path);
         }
 
         $clause->delete();
@@ -267,8 +315,9 @@ class SettingsController extends Controller
         $roles = Role::with('permissions')->orderBy('name')->get();
         $permissions = Permission::orderBy('name')->get();
         $clauses = TenantClause::orderBy('sort_order')->get();
+        $templates = NotificationTemplate::where('tenant_id', $tenant->id)->orderBy('event')->get();
 
-        return view('settings.index', compact('tenant', 'users', 'roles', 'permissions', 'clauses'));
+        return view('settings.index', compact('tenant', 'users', 'roles', 'permissions', 'clauses', 'templates'));
     }
 
     public function taxes(): View
@@ -292,5 +341,36 @@ class SettingsController extends Controller
         Auth::user()->tenant->update($validated);
 
         return redirect()->route('settings.index')->with('success', 'Configuración actualizada.');
+    }
+
+    public function updateNotificationTemplate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'event' => 'required|string',
+            'channel' => 'required|in:email,whatsapp',
+            'subject' => 'nullable|string|max:255',
+            'body' => 'required|string',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['is_active'] = $request->boolean('is_active');
+        $tenantId = Auth::user()->tenant_id;
+
+        NotificationTemplate::updateOrCreate(
+            [
+                'tenant_id' => $tenantId,
+                'event' => $validated['event'],
+                'channel' => $validated['channel'],
+            ],
+            [
+                'subject' => $validated['subject'],
+                'body' => $validated['body'],
+                'is_active' => $validated['is_active'],
+            ]
+        );
+
+        Log::info("Notification template updated: event={$validated['event']}, channel={$validated['channel']}");
+
+        return redirect()->route('settings.index')->with('success', 'Plantilla de notificación actualizada.');
     }
 }

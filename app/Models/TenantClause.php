@@ -18,6 +18,10 @@ class TenantClause extends Model
         'is_active',
         'print_on_receipt',
         'sort_order',
+        'file_path',
+        'file_name',
+        'file_url',
+        'has_file',
     ];
 
     protected function casts(): array
@@ -26,6 +30,7 @@ class TenantClause extends Model
             'is_active' => 'boolean',
             'print_on_receipt' => 'boolean',
             'sort_order' => 'integer',
+            'has_file' => 'boolean',
         ];
     }
 }

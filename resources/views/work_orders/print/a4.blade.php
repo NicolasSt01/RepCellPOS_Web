@@ -70,7 +70,11 @@
         <div class="clauses">
             @foreach($clauses as $clause)
                 <h3>{{ $clause->title }}</h3>
-                <p>{{ $clause->content }}</p>
+                @if($clause->has_file)
+                    <p><a href="{{ $clause->file_url }}" target="_blank" style="color:#2563eb;text-decoration:underline;">Ver política: {{ $clause->file_name }}</a></p>
+                @else
+                    <p>{{ $clause->content }}</p>
+                @endif
             @endforeach
         </div>
     @endif

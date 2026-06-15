@@ -12,11 +12,18 @@ for i in $(seq 1 30); do
     sleep 2
 done
 
-# Run migrations (idempotent)
-php artisan migrate --force
+# Run migrations once using a lock file
+if [ ! -f /var/www/html/storage/framework/migrated.lock ]; then
+    php artisan migrate --force
+    php artisan storage:link --force
 
-# Seed only if no roles exist (first deploy)
-php artisan db:seed --force --no-interaction 2>/dev/null || true
+    # Seed only in non-production or when APP_ENV is not production
+    if [ "${APP_ENV}" != "production" ]; then
+        php artisan db:seed --force --no-interaction 2>/dev/null || true
+    fi
+
+    touch /var/www/html/storage/framework/migrated.lock
+fi
 
 # Cache
 php artisan config:cache

@@ -48,7 +48,12 @@ class ClientController extends Controller
 
     public function show(Client $client): View
     {
-        return view('clients.show', compact('client'));
+        $workOrders = $client->workOrders()
+            ->with('user', 'assignedTechnician')
+            ->latest()
+            ->paginate(10);
+
+        return view('clients.show', compact('client', 'workOrders'));
     }
 
     public function edit(Client $client): View

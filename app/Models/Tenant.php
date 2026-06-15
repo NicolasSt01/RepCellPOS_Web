@@ -33,6 +33,7 @@ class Tenant extends Model
         'mail_password',
         'mail_from_address',
         'mail_from_name',
+        'whatsapp_webhook_url',
     ];
 
     protected function casts(): array

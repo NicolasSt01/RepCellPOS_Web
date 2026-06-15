@@ -32,11 +32,20 @@
                             @if($clause->print_on_receipt)
                                 <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">Se imprime</span>
                             @endif
+                            @if($clause->has_file)
+                                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400">PDF</span>
+                            @endif
                         </div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{{ $clause->content }}</p>
+                        @if($clause->has_file)
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                <a href="{{ $clause->file_url }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 underline">Ver archivo: {{ $clause->file_name }}</a>
+                            </p>
+                        @else
+                            <p class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{{ $clause->content }}</p>
+                        @endif
                     </div>
                     <div class="flex gap-2 ml-4">
-                        <button onclick="editClause({{ $clause->id }}, '{{ addslashes($clause->title) }}', '{{ addslashes($clause->content) }}', '{{ $clause->type }}', {{ $clause->is_active ? 'true' : 'false' }}, {{ $clause->print_on_receipt ? 'true' : 'false' }})"
+                        <button onclick="editClause({{ $clause->id }}, '{{ addslashes($clause->title) }}', '{{ addslashes($clause->content) }}', '{{ $clause->type }}', {{ $clause->is_active ? 'true' : 'false' }}, {{ $clause->print_on_receipt ? 'true' : 'false' }}, {{ $clause->has_file ? 'true' : 'false' }}, '{{ addslashes($clause->file_name ?? '') }}', '{{ addslashes($clause->file_url ?? '') }}')"
                             class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 text-sm">Editar</button>
                         <form method="POST" action="{{ route('settings.clauses.destroy', $clause) }}" class="inline" onsubmit="return confirm('¿Eliminar esta cláusula?')">
                             @csrf
@@ -60,7 +69,7 @@
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="this.parentElement.parentElement.classList.add('hidden')"></div>
         <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Nueva Cláusula</h3>
-            <form method="POST" action="{{ route('settings.clauses.store') }}" class="space-y-4">
+            <form method="POST" action="{{ route('settings.clauses.store') }}" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Título <span class="text-red-500">*</span></label>
@@ -79,9 +88,23 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Contenido <span class="text-red-500">*</span></label>
-                    <textarea name="content" rows="6" required
+                    <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Tipo de contenido</label>
+                    <select id="create-content-type" onchange="toggleCreateContentType(this.value)"
+                        class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                        <option value="text">Texto</option>
+                        <option value="file">Archivo PDF</option>
+                    </select>
+                </div>
+                <div id="create-text-content">
+                    <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Contenido</label>
+                    <textarea name="content" id="create-content" rows="6"
                         class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"></textarea>
+                </div>
+                <div id="create-file-content" class="hidden">
+                    <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Archivo PDF</label>
+                    <input type="file" name="file" accept=".pdf"
+                        class="mt-1 block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-900/30 dark:file:text-indigo-300 hover:file:bg-indigo-100">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">PDF, máximo 10MB</p>
                 </div>
                 <div class="flex items-center">
                     <input type="hidden" name="print_on_receipt" value="0">
@@ -103,7 +126,7 @@
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="this.parentElement.parentElement.classList.add('hidden')"></div>
         <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Editar Cláusula</h3>
-            <form id="edit-clause-form" method="POST" class="space-y-4">
+            <form id="edit-clause-form" method="POST" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 @method('PUT')
                 <div>
@@ -123,9 +146,29 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Contenido <span class="text-red-500">*</span></label>
-                    <textarea name="content" id="edit-content" rows="6" required
+                    <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Tipo de contenido</label>
+                    <select id="edit-content-type" onchange="toggleEditContentType(this.value)"
+                        class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                        <option value="text">Texto</option>
+                        <option value="file">Archivo PDF</option>
+                    </select>
+                </div>
+                <div id="edit-text-content">
+                    <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Contenido</label>
+                    <textarea name="content" id="edit-content" rows="6"
                         class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"></textarea>
+                </div>
+                <div id="edit-file-content" class="hidden">
+                    <label class="block text-sm font-medium text-gray-900 dark:text-gray-100">Archivo PDF</label>
+                    <div id="edit-current-file" class="mb-2 hidden">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Archivo actual:
+                            <a id="edit-file-link" href="#" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 underline"></a>
+                        </p>
+                    </div>
+                    <input type="file" name="file" accept=".pdf"
+                        class="mt-1 block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-900/30 dark:file:text-indigo-300 hover:file:bg-indigo-100">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">PDF, máximo 10MB. Sube un archivo nuevo para reemplazar el actual.</p>
                 </div>
                 <div class="flex items-center gap-6">
                     <div class="flex items-center">
@@ -151,13 +194,43 @@
 </div>
 
 <script>
-function editClause(id, title, content, type, isActive, printOnReceipt) {
+function toggleCreateContentType(value) {
+    document.getElementById('create-text-content').classList.toggle('hidden', value !== 'text');
+    document.getElementById('create-file-content').classList.toggle('hidden', value !== 'file');
+    document.getElementById('create-content').required = (value === 'text');
+}
+
+function toggleEditContentType(value) {
+    document.getElementById('edit-text-content').classList.toggle('hidden', value !== 'text');
+    document.getElementById('edit-file-content').classList.toggle('hidden', value !== 'file');
+    document.getElementById('edit-content').required = (value === 'text');
+}
+
+function editClause(id, title, content, type, isActive, printOnReceipt, hasFile, fileName, fileUrl) {
     document.getElementById('edit-clause-form').action = '/settings/clauses/' + id;
     document.getElementById('edit-title').value = title;
     document.getElementById('edit-content').value = content;
     document.getElementById('edit-type').value = type;
     document.getElementById('edit-is-active').checked = isActive;
     document.getElementById('edit-print').checked = printOnReceipt;
+
+    var contentType = document.getElementById('edit-content-type');
+    if (hasFile) {
+        contentType.value = 'file';
+        document.getElementById('edit-text-content').classList.add('hidden');
+        document.getElementById('edit-file-content').classList.remove('hidden');
+        document.getElementById('edit-content').required = false;
+        document.getElementById('edit-current-file').classList.remove('hidden');
+        document.getElementById('edit-file-link').textContent = fileName;
+        document.getElementById('edit-file-link').href = fileUrl;
+    } else {
+        contentType.value = 'text';
+        document.getElementById('edit-text-content').classList.remove('hidden');
+        document.getElementById('edit-file-content').classList.add('hidden');
+        document.getElementById('edit-content').required = true;
+        document.getElementById('edit-current-file').classList.add('hidden');
+    }
+
     document.getElementById('edit-clause-modal').classList.remove('hidden');
 }
 </script>

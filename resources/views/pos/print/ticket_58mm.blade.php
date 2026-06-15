@@ -126,7 +126,11 @@
 @if(($clauses ?? null) && count($clauses) > 0)
     <hr style="border-top:1px dashed #000;margin:8px 0;">
     @foreach($clauses as $clause)
-        <p style="font-size:8px;margin:2px 0;text-align:center;">{{ $clause->content }}</p>
+        @if($clause->has_file)
+            <p style="font-size:8px;margin:2px 0;text-align:center;"><a href="{{ $clause->file_url }}" target="_blank" style="color:#2563eb;text-decoration:underline;">Ver política: {{ $clause->file_name }}</a></p>
+        @else
+            <p style="font-size:8px;margin:2px 0;text-align:center;">{{ $clause->content }}</p>
+        @endif
     @endforeach
 @endif
 

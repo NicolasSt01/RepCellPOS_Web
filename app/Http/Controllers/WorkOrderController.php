@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WorkOrderReceipt;
 use App\Models\Client;
 use App\Models\Tenant;
+use App\Models\TenantClause;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Services\R2StorageService;
+use App\Services\TenantMailService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 
@@ -171,8 +176,54 @@ class WorkOrderController extends Controller
             'Orden pendiente de ser tomada por un técnico'
         );
 
-        return redirect()->route('work_orders.show', $workOrder)
+        $workOrder->load('client');
+
+        $redirect = redirect()->route('work_orders.print', $workOrder)
             ->with('success', "Orden de trabajo {$workOrderNumber} creada exitosamente.");
+
+        if ($workOrder->client->notification_preference === 'email' && $workOrder->client->email) {
+            try {
+                if ($tenant->mail_host && $tenant->mail_username && $tenant->mail_password) {
+                    app(TenantMailService::class)->configureForTenant($tenant);
+                    Mail::to($workOrder->client->email)
+                        ->send(new WorkOrderReceipt($workOrder, $tenant));
+                }
+            } catch (\Exception $e) {
+                logger()->error('Error enviando correo de OT: ' . $e->getMessage());
+            }
+        }
+
+        return $redirect;
+    }
+
+    public function print(WorkOrder $workOrder): View
+    {
+        $this->authorizeTenant($workOrder);
+        $workOrder->load('client');
+        $tenant = $workOrder->tenant;
+        $format = $tenant->print_format ?? 'ticket_80mm';
+        $clauses = TenantClause::where('tenant_id', $tenant->id)
+            ->where('print_on_receipt', true)
+            ->where('is_active', true)
+            ->get();
+        return view("work_orders.print.{$format}", compact('workOrder', 'tenant', 'clauses'));
+    }
+
+    public function printPdf(WorkOrder $workOrder)
+    {
+        $this->authorizeTenant($workOrder);
+        $workOrder->load('client');
+        $tenant = $workOrder->tenant;
+        $clauses = TenantClause::where('tenant_id', $tenant->id)
+            ->where('print_on_receipt', true)
+            ->where('is_active', true)
+            ->get();
+
+        $html = view("work_orders.print.a4", compact('workOrder', 'tenant', 'clauses'))->with('pdf', true)->render();
+        $pdf = Pdf::loadHTML($html);
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download("comprobante-OT-{$workOrder->work_order_number}.pdf");
     }
 
     public function show(WorkOrder $workOrder): View
@@ -378,6 +429,11 @@ class WorkOrderController extends Controller
 
         return redirect()->route('work_orders.show', $workOrder)
             ->with('success', count($newPaths) . ' foto(s) agregada(s) al expediente del equipo.');
+    }
+
+    private function authorizeTenant(WorkOrder $workOrder): void
+    {
+        abort_if($workOrder->tenant_id !== Auth::user()->tenant_id, 403);
     }
 
     public function unassignTechnician(WorkOrder $workOrder): RedirectResponse

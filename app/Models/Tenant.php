@@ -26,6 +26,13 @@ class Tenant extends Model
         'work_order_prefix',
         'work_order_sequence',
         'is_active',
+        'mail_host',
+        'mail_port',
+        'mail_username',
+        'mail_encryption',
+        'mail_password',
+        'mail_from_address',
+        'mail_from_name',
     ];
 
     protected function casts(): array
@@ -36,6 +43,7 @@ class Tenant extends Model
             'tax_percentage' => 'decimal:2',
             'work_order_sequence' => 'integer',
             'is_active' => 'boolean',
+            'mail_password' => 'encrypted',
         ];
     }
 

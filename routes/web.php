@@ -30,6 +30,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [TenantController::class, 'register']);
 });
 
+// Logout must be accessible to all authenticated users including superadmin
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
 Route::middleware(['auth', 'not-superadmin'])->group(function () {
     Route::get('/r2/{path}', function ($path) {
         if (!\Illuminate\Support\Facades\Storage::disk('r2')->exists($path)) {
@@ -41,13 +44,14 @@ Route::middleware(['auth', 'not-superadmin'])->group(function () {
     })->where('path', '.*')->name('r2.serve');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::resource('clients', ClientController::class);
 
     Route::get('/work_orders/search-clients', [WorkOrderController::class, 'searchClients'])->name('work_orders.search_clients');
     Route::post('/work_orders/store-client', [WorkOrderController::class, 'storeClient'])->name('work_orders.store_client');
     Route::resource('work_orders', WorkOrderController::class);
+    Route::get('/work_orders/{work_order}/print', [WorkOrderController::class, 'print'])->name('work_orders.print');
+    Route::get('/work_orders/{work_order}/print-pdf', [WorkOrderController::class, 'printPdf'])->name('work_orders.print.pdf');
     Route::get('/work_orders/reports', [WorkOrderController::class, 'reports'])->name('work_orders.reports');
     Route::post('/work_orders/{work_order}/change_status', [WorkOrderController::class, 'changeStatus'])->name('work_orders.change_status');
     Route::post('/work_orders/{work_order}/set_priority', [WorkOrderController::class, 'setPriority'])->name('work_orders.set_priority');

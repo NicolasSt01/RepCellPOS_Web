@@ -31,6 +31,13 @@ class SettingsController extends Controller
             'address' => 'nullable|string|max:500',
             'social_media' => 'nullable|json',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'mail_host' => 'nullable|string|max:255',
+            'mail_port' => 'nullable|string|max:10',
+            'mail_username' => 'nullable|string|max:255',
+            'mail_password' => 'nullable|string|max:255',
+            'mail_encryption' => 'nullable|in:tls,ssl,',
+            'mail_from_address' => 'nullable|email|max:255',
+            'mail_from_name' => 'nullable|string|max:255',
         ]);
 
         $tenant = Auth::user()->tenant;
@@ -40,7 +47,17 @@ class SettingsController extends Controller
             'phone' => $validated['phone'] ?? $tenant->phone,
             'email' => $validated['email'] ?? $tenant->email,
             'address' => $validated['address'] ?? $tenant->address,
+            'mail_host' => $validated['mail_host'] ?? $tenant->mail_host,
+            'mail_port' => $validated['mail_port'] ?? $tenant->mail_port,
+            'mail_username' => $validated['mail_username'] ?? $tenant->mail_username,
+            'mail_encryption' => $validated['mail_encryption'] ?? $tenant->mail_encryption,
+            'mail_from_address' => $validated['mail_from_address'] ?? $tenant->mail_from_address,
+            'mail_from_name' => $validated['mail_from_name'] ?? $tenant->mail_from_name,
         ];
+
+        if ($request->filled('mail_password')) {
+            $data['mail_password'] = $validated['mail_password'];
+        }
 
         if ($request->hasFile('logo')) {
             if ($tenant->logo) {

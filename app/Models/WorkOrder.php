@@ -31,6 +31,7 @@ class WorkOrder extends Model
         'priority',
         'timeline',
         'work_order_number',
+        'tracking_token',
     ];
 
     protected function casts(): array

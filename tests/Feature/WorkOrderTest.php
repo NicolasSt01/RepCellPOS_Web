@@ -88,7 +88,7 @@ class WorkOrderTest extends TestCase
         $workOrder = WorkOrder::where('device_brand', 'Apple')->first();
         $this->assertNotNull($workOrder);
         
-        $response->assertRedirect(route('work_orders.show', $workOrder));
+        $response->assertRedirect(route('work_orders.print', $workOrder));
         $response->assertSessionHas('success');
 
         $this->assertEquals('Apple', $workOrder->device_brand);

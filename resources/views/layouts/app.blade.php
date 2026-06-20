@@ -111,7 +111,7 @@
                 <!-- Search/Brand Left aligned section -->
                 <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                     <div class="flex flex-1 items-center">
-                        @if(Auth::user()->tenant)
+                        @if(Auth::user()->tenant && !Auth::user()->isSuperAdmin())
                             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-md select-none border border-gray-200 dark:border-gray-700">
                                 🏢 {{ Auth::user()->tenant->name }}
                             </span>
@@ -170,7 +170,7 @@
                                     @endif
                                 </div>
 
-                                <!-- Configuration Section -->
+                                @unless(Auth::user()->isSuperAdmin())
                                 <div class="py-1">
                                     <div class="px-4 py-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Configuración</div>
                                     @can('settings.company')
@@ -199,6 +199,7 @@
                                         </a>
                                     @endcan
                                 </div>
+                                @endunless
 
                                 <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
 

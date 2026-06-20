@@ -140,4 +140,11 @@ Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->grou
     Route::post('finances/confirm/{id}', [App\Http\Controllers\SuperAdminController::class, 'confirmPayment'])->name('finances.confirm');
     Route::post('finances/reject/{id}', [App\Http\Controllers\SuperAdminController::class, 'rejectPayment'])->name('finances.reject');
     Route::get('finances/export', [App\Http\Controllers\SuperAdminController::class, 'exportFinances'])->name('finances.export');
+
+    Route::get('plans', [App\Http\Controllers\SuperAdminController::class, 'plans'])->name('plans.index');
+    Route::get('plans/create', [App\Http\Controllers\SuperAdminController::class, 'planCreate'])->name('plans.create');
+    Route::post('plans', [App\Http\Controllers\SuperAdminController::class, 'planStore'])->name('plans.store');
+    Route::get('plans/{plan}/edit', [App\Http\Controllers\SuperAdminController::class, 'planEdit'])->name('plans.edit');
+    Route::put('plans/{plan}', [App\Http\Controllers\SuperAdminController::class, 'planUpdate'])->name('plans.update');
+    Route::delete('plans/{plan}', [App\Http\Controllers\SuperAdminController::class, 'planDestroy'])->name('plans.destroy');
 });

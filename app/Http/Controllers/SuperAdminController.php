@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Client;
 use App\Models\Plan;
-use App\Models\Product;
-use App\Models\Sale;
 use App\Models\Tenant;
 use App\Models\TenantSubscription;
 use App\Models\User;
-use App\Models\WorkOrder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class SuperAdminController extends Controller
 {
@@ -27,20 +25,45 @@ class SuperAdminController extends Controller
               });
         })->count();
         $activeSubscriptions = Tenant::where('subscription_status', 'active')->count();
+        $totalUsers = User::where('is_superadmin', false)->count();
+
+        $mrr = TenantSubscription::where('status', 'activa')->sum('amount');
+
+        $previousMonthMrr = TenantSubscription::where('status', 'activa')
+            ->whereYear('created_at', now()->subMonth()->year)
+            ->whereMonth('created_at', now()->subMonth()->month)
+            ->sum('amount');
+
+        $mrrChange = $previousMonthMrr > 0
+            ? round((($mrr - $previousMonthMrr) / $previousMonthMrr) * 100, 1)
+            : 0;
+
+        $planDistribution = Plan::withCount(['tenants' => function ($q) {
+            $q->where('is_active', true);
+        }])->where('is_active', true)->orderBy('sort_order')->get();
+
+        $expiringSoon = TenantSubscription::where('status', 'activa')
+            ->where('end_date', '>=', now())
+            ->where('end_date', '<=', now()->addDays(7))
+            ->with('tenant.plan')
+            ->take(10)
+            ->get();
+
         $monthlyRevenue = TenantSubscription::where('status', 'activa')
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->sum('amount');
-        $totalUsers = User::where('is_superadmin', false)->count();
-        $totalClients = Client::count();
-        $totalProducts = Product::count();
-        $totalWorkOrders = WorkOrder::count();
-        $totalSales = Sale::count();
 
-        $tenants = Tenant::withCount('users')
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
+        $dateFormat = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
+        $revenueHistory = TenantSubscription::selectRaw("{$dateFormat} as month, SUM(amount) as total")
+            ->where('status', 'activa')
+            ->where('created_at', '>=', now()->subMonths(6))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month');
 
         $recentTenants = Tenant::orderBy('created_at', 'desc')->take(5)->get();
         $pendingPayments = TenantSubscription::where('status', 'pendiente')
@@ -49,13 +72,12 @@ class SuperAdminController extends Controller
             ->latest()
             ->take(10)
             ->get();
-        $plans = Plan::where('is_active', true)->get();
 
         return view('superadmin.dashboard', compact(
             'totalTenants', 'activeTenants', 'trialTenants', 'expiredTrials',
-            'activeSubscriptions', 'monthlyRevenue',
-            'totalUsers', 'totalClients', 'totalProducts', 'totalWorkOrders',
-            'totalSales', 'tenants', 'recentTenants', 'pendingPayments', 'plans'
+            'activeSubscriptions', 'mrr', 'mrrChange', 'monthlyRevenue',
+            'totalUsers', 'planDistribution', 'expiringSoon',
+            'revenueHistory', 'recentTenants', 'pendingPayments'
         ));
     }
 
@@ -66,7 +88,11 @@ class SuperAdminController extends Controller
         $pendingRevenue = TenantSubscription::where('status', 'pendiente')->sum('amount');
         $mrr = TenantSubscription::where('status', 'activa')->sum('amount');
 
-        $monthlyCollection = TenantSubscription::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total")
+        $dateFormat = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
+        $monthlyCollection = TenantSubscription::selectRaw("{$dateFormat} as month, SUM(amount) as total")
             ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('month')
             ->orderBy('month')
@@ -254,5 +280,85 @@ class SuperAdminController extends Controller
 
         return redirect()->route('admin.tenants.show', $tenant)
             ->with('success', 'Pago registrado exitosamente.');
+    }
+
+    public function plans()
+    {
+        $plans = Plan::orderBy('sort_order')->get();
+        return view('superadmin.plans.index', compact('plans'));
+    }
+
+    public function planCreate()
+    {
+        return view('superadmin.plans.create');
+    }
+
+    public function planStore(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'features' => 'nullable|string',
+            'limits' => 'nullable|string',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
+            'is_highlight' => 'boolean',
+        ]);
+
+        $validated['slug'] = Str::slug($validated['name']);
+        $validated['features'] = $validated['features'] ? array_map('trim', explode("\n", $validated['features'])) : [];
+        $validated['limits'] = $validated['limits'] ? json_decode($validated['limits'], true) : [];
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_highlight'] = $request->boolean('is_highlight');
+
+        Plan::create($validated);
+
+        return redirect()->route('admin.plans.index')
+            ->with('success', 'Plan creado exitosamente.');
+    }
+
+    public function planEdit(Plan $plan)
+    {
+        return view('superadmin.plans.edit', compact('plan'));
+    }
+
+    public function planUpdate(Request $request, Plan $plan)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'features' => 'nullable|string',
+            'limits' => 'nullable|string',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
+            'is_highlight' => 'boolean',
+        ]);
+
+        $validated['slug'] = Str::slug($validated['name']);
+        $validated['features'] = $validated['features'] ? array_map('trim', explode("\n", $validated['features'])) : [];
+        $validated['limits'] = $validated['limits'] ? json_decode($validated['limits'], true) : [];
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_highlight'] = $request->boolean('is_highlight');
+
+        $plan->update($validated);
+
+        return redirect()->route('admin.plans.index')
+            ->with('success', 'Plan actualizado exitosamente.');
+    }
+
+    public function planDestroy(Plan $plan)
+    {
+        $tenantCount = Tenant::where('plan_id', $plan->id)->count();
+        if ($tenantCount > 0) {
+            return redirect()->route('admin.plans.index')
+                ->with('error', "No se puede eliminar el plan \"{$plan->name}\" porque {$tenantCount} tenant(s) lo tienen asignado.");
+        }
+
+        $plan->delete();
+
+        return redirect()->route('admin.plans.index')
+            ->with('success', 'Plan eliminado exitosamente.');
     }
 }

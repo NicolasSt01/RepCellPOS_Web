@@ -91,3 +91,34 @@ Route::get('/__e2e/activate-plan', function (\Illuminate\Http\Request $request) 
     ]);
     return response()->json(['status' => 'plan_activated', 'tenant' => $user->tenant->name, 'plan' => $plan->name]);
 });
+
+Route::get('/__e2e/expire-subscription', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    if (!$email) {
+        return response()->json(['error' => 'Email parameter required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'User or tenant not found'], 404);
+    }
+    $tenant = $user->tenant;
+
+    $tenant->update([
+        'subscription_status' => 'active',
+        'trial_ends_at' => null,
+    ]);
+
+    \App\Models\TenantSubscription::updateOrCreate(
+        ['tenant_id' => $tenant->id],
+        [
+            'plan_id' => $tenant->plan_id,
+            'plan_type' => 'mensual',
+            'amount' => 0,
+            'start_date' => now()->subDays(30),
+            'end_date' => now()->subDay(),
+            'status' => 'activa',
+        ]
+    );
+
+    return response()->json(['status' => 'subscription_expired', 'tenant' => $tenant->name]);
+});

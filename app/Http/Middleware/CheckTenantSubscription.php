@@ -40,6 +40,11 @@ class CheckTenantSubscription
         }
 
         if ($tenant->subscription_status === 'active') {
+            if ($tenant->subscription && $tenant->subscription->end_date && now()->gt($tenant->subscription->end_date)) {
+                $tenant->update(['subscription_status' => 'expired']);
+                return redirect()->route('subscription.upgrade')
+                    ->with('error', 'Tu suscripción ha expirado. Renueva tu plan para continuar.');
+            }
             return $next($request);
         }
 

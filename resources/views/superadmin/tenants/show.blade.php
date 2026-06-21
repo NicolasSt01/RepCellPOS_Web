@@ -183,6 +183,57 @@
                     </div>
                     @endif
                 </dl>
+                @elseif($tenant->subscription_status === 'trial')
+                <dl class="space-y-3">
+                    <div>
+                        <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</dt>
+                        <dd class="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {{ $tenant->plan?->name ?? 'Premium' }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</dt>
+                        <dd class="mt-1 flex items-center gap-2">
+                            @php
+                                $trialExpired = $tenant->trial_ends_at && $tenant->trial_ends_at->isPast();
+                                $trialExpiringSoon = $tenant->trial_ends_at && $tenant->trial_ends_at->isFuture() && $tenant->trial_ends_at->diffInDays(now()) <= 2;
+                            @endphp
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium
+                                {{ $trialExpired ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : ($trialExpiringSoon ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400') }}">
+                                Prueba (Trial)
+                            </span>
+                            @if($trialExpired)
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                Expirado
+                            </span>
+                            @elseif($trialExpiringSoon)
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                Por expirar
+                            </span>
+                            @else
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                                Activo
+                            </span>
+                            @endif
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Inicio</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $tenant->created_at->format('d/m/Y') }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Finaliza</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $tenant->trial_ends_at?->format('d/m/Y') ?? '—' }}</dd>
+                    </div>
+                    @if($tenant->trial_ends_at && !$trialExpired)
+                    <div>
+                        <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Días restantes</dt>
+                        <dd class="mt-1 text-sm font-semibold {{ $trialExpiringSoon ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-900 dark:text-gray-100' }}">
+                            {{ $tenant->trial_ends_at->diffInDays(now()) }} días
+                        </dd>
+                    </div>
+                    @endif
+                </dl>
                 @else
                 <p class="text-sm text-gray-500 dark:text-gray-400">Sin suscripción registrada.</p>
                 @endif

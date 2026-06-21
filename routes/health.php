@@ -32,3 +32,62 @@ Route::get('/__e2e/cleanup', function () {
     \Illuminate\Support\Facades\DB::table('tenants')->update(['work_order_sequence' => 0]);
     return response()->json(['status' => 'cleaned']);
 });
+
+Route::get('/__e2e/expire-trial', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    if (!$email) {
+        return response()->json(['error' => 'Email parameter required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'User or tenant not found'], 404);
+    }
+    $user->tenant->update([
+        'trial_ends_at' => now()->subDay(),
+    ]);
+    return response()->json(['status' => 'trial_expired', 'tenant' => $user->tenant->name]);
+});
+
+Route::get('/__e2e/fill-clients', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    $count = (int) ($request->query('count', 50));
+    if (!$email) {
+        return response()->json(['error' => 'Email parameter required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'User or tenant not found'], 404);
+    }
+    $tenant = $user->tenant;
+    for ($i = 0; $i < $count; $i++) {
+        \App\Models\Client::create([
+            'tenant_id' => $tenant->id,
+            'name' => "E2E Client {$i}",
+            'phone' => '+52 55 9999 ' . str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+            'notification_preference' => 'call',
+        ]);
+    }
+    return response()->json(['status' => 'clients_created', 'count' => $count, 'total' => $tenant->clients()->count()]);
+});
+
+Route::get('/__e2e/activate-plan', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    $planSlug = $request->query('plan');
+    if (!$email || !$planSlug) {
+        return response()->json(['error' => 'Email and plan parameters required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    $plan = \App\Models\Plan::where('slug', $planSlug)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'User or tenant not found'], 404);
+    }
+    if (!$plan) {
+        return response()->json(['error' => 'Plan not found'], 404);
+    }
+    $user->tenant->update([
+        'plan_id' => $plan->id,
+        'subscription_status' => 'active',
+        'trial_ends_at' => null,
+    ]);
+    return response()->json(['status' => 'plan_activated', 'tenant' => $user->tenant->name, 'plan' => $plan->name]);
+});

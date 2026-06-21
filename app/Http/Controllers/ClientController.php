@@ -41,6 +41,11 @@ class ClientController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
+        if (!auth()->user()->tenant->canCreateClient()) {
+            return redirect()->route('clients.index')
+                ->with('error', 'Has alcanzado el límite de clientes de tu plan. Actualiza tu plan para agregar más.');
+        }
+
         Client::create($validated);
 
         return redirect()->route('clients.index')->with('success', 'Cliente creado exitosamente.');

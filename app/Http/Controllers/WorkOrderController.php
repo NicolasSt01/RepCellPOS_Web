@@ -96,6 +96,12 @@ class WorkOrderController extends Controller
             'notification_preference' => 'required|in:whatsapp,email,call',
         ]);
 
+        if (!Auth::user()->tenant->canCreateClient()) {
+            return response()->json([
+                'error' => 'Has alcanzado el límite de clientes de tu plan. Actualiza tu plan para agregar más.',
+            ], 403);
+        }
+
         $validated['tenant_id'] = Auth::user()->tenant_id;
         $client = Client::create($validated);
 
@@ -125,6 +131,12 @@ class WorkOrderController extends Controller
         ]);
 
         $tenant = Auth::user()->tenant;
+
+        if (!$tenant->canCreateWorkOrder()) {
+            return redirect()->route('work_orders.index')
+                ->with('error', 'Has alcanzado el límite mensual de órdenes de trabajo de tu plan. Actualiza tu plan para continuar.');
+        }
+
         $workOrderNumber = WorkOrder::generateWorkOrderNumber($tenant);
 
         // Upload images to R2

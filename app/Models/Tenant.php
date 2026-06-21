@@ -93,4 +93,52 @@ class Tenant extends Model
         $this->increment('work_order_sequence');
         return $this->work_order_sequence;
     }
+
+    public function hasFeature(string $feature): bool
+    {
+        if ($this->subscription_status === 'trial') {
+            return true;
+        }
+        return $this->plan?->features[$feature] ?? false;
+    }
+
+    public function hasLimit(string $limit): array
+    {
+        $limitValue = $this->plan?->limits[$limit] ?? 0;
+        return [
+            'unlimited' => $limitValue === -1,
+            'value' => $limitValue,
+        ];
+    }
+
+    public function canCreateUser(): bool
+    {
+        $limit = $this->hasLimit('max_users');
+        if ($limit['unlimited']) {
+            return true;
+        }
+        return $this->users()->count() < $limit['value'];
+    }
+
+    public function canCreateClient(): bool
+    {
+        $limit = $this->hasLimit('max_clients');
+        if ($limit['unlimited']) {
+            return true;
+        }
+        return $this->clients()->count() < $limit['value'];
+    }
+
+    public function canCreateWorkOrder(): bool
+    {
+        $limit = $this->hasLimit('max_monthly_work_orders');
+        if ($limit['unlimited']) {
+            return true;
+        }
+        $monthlyCount = $this->workOrders()
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+        return $monthlyCount < $limit['value'];
+    }
 }

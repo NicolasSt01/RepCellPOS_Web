@@ -73,27 +73,31 @@ Route::middleware(['auth', 'not-superadmin', 'subscription.active'])->group(func
     Route::post('/products/{product}/adjust_stock', [ProductController::class, 'adjustStock'])->name('products.adjust_stock');
     Route::post('/products/{product}/print-labels', [ProductController::class, 'printLabels'])->name('products.print_labels');
 
-    Route::get('/work_orders/{work_order}/quote', [QuoteController::class, 'show'])->name('quotes.show');
-    Route::post('/quotes/{quote}/add_item', [QuoteController::class, 'addItem'])->name('quotes.add_item');
-    Route::delete('/quote_items/{quoteItem}', [QuoteController::class, 'removeItem'])->name('quotes.remove_item');
-    Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
-    Route::post('/quotes/{quote}/approve', [QuoteController::class, 'approve'])->name('quotes.approve');
-    Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
-    Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf'])->name('quotes.pdf');
+    Route::middleware('plan.feature:quotes')->group(function () {
+        Route::get('/work_orders/{work_order}/quote', [QuoteController::class, 'show'])->name('quotes.show');
+        Route::post('/quotes/{quote}/add_item', [QuoteController::class, 'addItem'])->name('quotes.add_item');
+        Route::delete('/quote_items/{quoteItem}', [QuoteController::class, 'removeItem'])->name('quotes.remove_item');
+        Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
+        Route::post('/quotes/{quote}/approve', [QuoteController::class, 'approve'])->name('quotes.approve');
+        Route::post('/quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+        Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf'])->name('quotes.pdf');
+    });
 
-    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
-    Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
-    Route::get('/pos/print/{sale}', [PosController::class, 'print'])->name('pos.print');
-    Route::get('/pos/print/{sale}/preview', [PosController::class, 'printPreview'])->name('pos.print.preview');
+    Route::middleware('plan.feature:pos')->group(function () {
+        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+        Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+        Route::get('/pos/print/{sale}', [PosController::class, 'print'])->name('pos.print');
+        Route::get('/pos/print/{sale}/preview', [PosController::class, 'printPreview'])->name('pos.print.preview');
 
-    Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
-    Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
-    Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
+        Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+        Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+        Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
 
-    Route::get('/returns', [ReturnController::class, 'index'])->name('returns.index');
-    Route::get('/returns/create', [ReturnController::class, 'create'])->name('returns.create');
-    Route::post('/returns/search-sale', [ReturnController::class, 'searchSale'])->name('returns.search_sale');
-    Route::post('/returns', [ReturnController::class, 'store'])->name('returns.store');
+        Route::get('/returns', [ReturnController::class, 'index'])->name('returns.index');
+        Route::get('/returns/create', [ReturnController::class, 'create'])->name('returns.create');
+        Route::post('/returns/search-sale', [ReturnController::class, 'searchSale'])->name('returns.search_sale');
+        Route::post('/returns', [ReturnController::class, 'store'])->name('returns.store');
+    });
 
     Route::get('/cash_registers', [CashRegisterController::class, 'index'])->name('cash_registers.index');
     Route::post('/cash_registers/open', [CashRegisterController::class, 'open'])->name('cash_registers.open');

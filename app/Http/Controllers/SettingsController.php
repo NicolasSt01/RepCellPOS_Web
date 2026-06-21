@@ -103,6 +103,11 @@ class SettingsController extends Controller
             'role' => 'required|exists:roles,name',
         ]);
 
+        if (!Auth::user()->tenant->canCreateUser()) {
+            return redirect()->route('settings.index')
+                ->with('error', 'Has alcanzado el límite de usuarios de tu plan. Actualiza tu plan para agregar más.');
+        }
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],

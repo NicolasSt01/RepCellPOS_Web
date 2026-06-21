@@ -42,6 +42,9 @@ Instrucciones_Dockploy.md
 # Graphify - knowledge graph cache (no subir al repo)
 /graphify-out/
 
-# E2E testing - env con credenciales y artifacts
-.env.e2e
+# E2E testing (Playwright) — no subir al repo
+/e2e/
+/playwright.config.ts
 /test-results/
+/playwright-report/
+.env.e2e

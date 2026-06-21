@@ -42,11 +42,18 @@ class PosController extends Controller
             ->pluck('product_id');
 
         if ($topProductIds->isNotEmpty()) {
-            $idsOrder = implode(',', $topProductIds->toArray());
-            $topProducts = Product::whereIn('id', $topProductIds)
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(id, {$idsOrder})")
-                ->get();
+            if (DB::connection()->getDriverName() === 'sqlite') {
+                $topProducts = Product::whereIn('id', $topProductIds)
+                    ->where('is_active', true)
+                    ->get();
+                $topProducts = $topProducts->sortBy(fn($p) => array_search($p->id, $topProductIds->toArray()))->values();
+            } else {
+                $idsOrder = implode(',', $topProductIds->toArray());
+                $topProducts = Product::whereIn('id', $topProductIds)
+                    ->where('is_active', true)
+                    ->orderByRaw("FIELD(id, {$idsOrder})")
+                    ->get();
+            }
         } else {
             $topProducts = Product::where('tenant_id', $tenant->id)
                 ->where('is_active', true)

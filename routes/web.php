@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [App\Http\Controllers\LandingController::class, 'index'])->name('landing');
 
 Route::get('/seguimiento/{token}', [TrackingController::class, 'show'])->name('tracking.show');
+Route::post('/seguimiento/{token}/approve-quote', [TrackingController::class, 'approveQuote'])->name('tracking.approve-quote');
+Route::post('/seguimiento/{token}/reject-quote', [TrackingController::class, 'rejectQuote'])->name('tracking.reject-quote');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');

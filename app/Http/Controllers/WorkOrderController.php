@@ -161,6 +161,7 @@ class WorkOrderController extends Controller
             'status' => 'recibida',
             'priority' => 'media',
             'images' => !empty($imagePaths) ? $imagePaths : null,
+            'tracking_token' => \Illuminate\Support\Str::random(32),
         ]));
 
         $workOrder->addTimelineEvent(

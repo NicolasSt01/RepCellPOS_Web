@@ -41,3 +41,7 @@ Instrucciones_Dockploy.md
 
 # Graphify - knowledge graph cache (no subir al repo)
 /graphify-out/
+
+# E2E testing - env con credenciales y artifacts
+.env.e2e
+/test-results/

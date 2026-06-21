@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Seguimiento de Orden — {{ $workOrder->work_order_number }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>[x-cloak] { display: none !important; }</style>
 </head>
 <body class="h-full">
     <div class="min-h-full py-12 px-4 sm:px-6 lg:px-8">
@@ -13,6 +14,22 @@
                 <h1 class="text-3xl font-bold text-indigo-600">RepCellPOS</h1>
                 <p class="mt-2 text-lg text-gray-600">Seguimiento de Orden de Trabajo</p>
             </div>
+
+            @if(session('success'))
+            <div class="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+            </div>
+            @endif
+            @if(session('error'))
+            <div class="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+            </div>
+            @endif
+            @if(session('info'))
+            <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p class="text-sm font-medium text-blue-800">{{ session('info') }}</p>
+            </div>
+            @endif
 
             <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
                 <div class="p-6 bg-indigo-50 border-b border-indigo-100">
@@ -100,6 +117,104 @@
                         @php $cancelEvent = collect($workOrder->timeline ?? [])->where('estado', 'cancelada')->last(); @endphp
                         @if($cancelEvent && $cancelEvent['comentario'])
                         <p class="text-sm text-red-600 mt-1">{{ $cancelEvent['comentario'] }}</p>
+                        @endif
+                    </div>
+                    @endif
+
+                    @if($workOrder->quote && in_array($workOrder->quote->status, ['enviada', 'aprobada', 'rechazada']))
+                    @php $quote = $workOrder->quote; @endphp
+                    <div class="mt-8 border-t border-gray-200 pt-6">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-4">Cotización</h3>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left py-2 pr-2 font-medium text-gray-500">Descripción</th>
+                                        <th class="text-center py-2 px-2 font-medium text-gray-500">Tipo</th>
+                                        <th class="text-center py-2 px-2 font-medium text-gray-500">Cant.</th>
+                                        <th class="text-right py-2 px-2 font-medium text-gray-500">P. Unit.</th>
+                                        <th class="text-right py-2 pl-2 font-medium text-gray-500">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($quote->quoteItems as $item)
+                                    <tr class="border-b border-gray-100">
+                                        <td class="py-2 pr-2 text-gray-900">{{ $item->description }}</td>
+                                        <td class="py-2 px-2 text-center">
+                                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium
+                                                @if($item->type === 'producto') bg-blue-100 text-blue-700
+                                                @else bg-gray-100 text-gray-700 @endif">
+                                                {{ $item->type === 'producto' ? 'Producto' : 'Servicio' }}
+                                            </span>
+                                        </td>
+                                        <td class="py-2 px-2 text-center text-gray-900">{{ $item->quantity }}</td>
+                                        <td class="py-2 px-2 text-right text-gray-900">${{ number_format($item->unit_price, 2) }}</td>
+                                        <td class="py-2 pl-2 text-right text-gray-900">${{ number_format($item->subtotal, 2) }}</td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="5" class="py-4 text-center text-gray-400">Sin items</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 space-y-1 text-sm text-right">
+                            <p class="text-gray-500">Subtotal: <span class="font-medium text-gray-900">${{ number_format($quote->subtotal, 2) }}</span></p>
+                            @if($quote->tax_total > 0)
+                            <p class="text-gray-500">Impuestos: <span class="font-medium text-gray-900">${{ number_format($quote->tax_total, 2) }}</span></p>
+                            @endif
+                            <p class="text-lg font-bold text-gray-900">Total: ${{ number_format($quote->total, 2) }}</p>
+                        </div>
+
+                        @if($quote->status === 'enviada')
+                        <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
+                            <form method="POST" action="{{ route('tracking.reject-quote', $workOrder->tracking_token) }}"
+                                  x-data="{ open: false, reason: '' }"
+                                  @submit.prevent="if(open) $el.submit(); else open = true">
+                                @csrf
+                                <div x-show="open" x-cloak class="mb-3 w-full sm:w-80">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo del rechazo (opcional)</label>
+                                    <textarea x-model="reason" name="reason" rows="2"
+                                        class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-red-500 sm:text-sm sm:leading-6"
+                                        placeholder="Ej: Presupuesto muy elevado"></textarea>
+                                </div>
+                                <div class="flex gap-3 justify-end">
+                                    <button type="submit"
+                                        class="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                                        <span x-show="!open">Rechazar Cotización</span>
+                                        <span x-show="open">Confirmar Rechazo</span>
+                                    </button>
+                                    <button type="button" @click="open = false" x-show="open"
+                                        class="inline-flex items-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                            <form method="POST" action="{{ route('tracking.approve-quote', $workOrder->tracking_token) }}">
+                                @csrf
+                                <button type="submit"
+                                    onclick="return confirm('¿Estás seguro de aprobar esta cotización? Al hacerlo, se reservará el stock necesario.')"
+                                    class="inline-flex items-center rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500">
+                                    Aprobar Cotización
+                                </button>
+                            </form>
+                        </div>
+                        @elseif($quote->status === 'aprobada')
+                        <div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <p class="text-sm font-medium text-green-800">✓ Cotización aprobada</p>
+                            <p class="text-xs text-green-600 mt-1">El taller ya tiene tu aprobación y está procesando la reparación.</p>
+                        </div>
+                        @elseif($quote->status === 'rechazada')
+                        <div class="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                            <p class="text-sm font-medium text-red-800">✗ Cotización rechazada</p>
+                            @if($quote->cancellation_reason)
+                            <p class="text-xs text-red-600 mt-1">Motivo: {{ $quote->cancellation_reason }}</p>
+                            @endif
+                            <p class="text-xs text-red-500 mt-1">El taller revisará tu decisión y se pondrá en contacto contigo.</p>
+                        </div>
                         @endif
                     </div>
                     @endif

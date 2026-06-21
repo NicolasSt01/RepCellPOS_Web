@@ -1,5 +1,8 @@
 @extends('layouts.app')
 
+@php $knownFeatures = config('plans.features'); @endphp
+@php $knownLimits = config('plans.limits'); @endphp
+
 @section('content')
 <div class="max-w-2xl mx-auto">
     <div class="mb-6">
@@ -35,12 +38,47 @@
             </div>
 
             <div>
-                <label for="features" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Características</label>
-                <textarea name="features" id="features" rows="6"
-                          class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                          placeholder="Una característica por línea&#10;Ej: Hasta 10 usuarios&#10;POS incluido&#10;Soporte prioritario">{{ old('features') }}</textarea>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Escribe cada característica en una línea nueva.</p>
+                <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Características del Plan</h2>
+                <div class="space-y-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                    @foreach($knownFeatures as $key => $label)
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ $label }}</span>
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="hidden" name="features[{{ $key }}]" value="0">
+                            <input type="checkbox" name="features[{{ $key }}]" value="1"
+                                   {{ old("features.{$key}") ? 'checked' : '' }}
+                                   class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </div>
+                    </label>
+                    @endforeach
+                </div>
                 @error('features') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Límites del Plan</h2>
+                <div class="space-y-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                    @foreach($knownLimits as $key => $config)
+                    <div>
+                        <label for="limit_{{ $key }}" class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                            {{ $config['label'] }}
+                            @if($config['unlimited'])
+                            <span class="text-xs text-gray-400">(-1 = ilimitado)</span>
+                            @endif
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="limits[{{ $key }}]" id="limit_{{ $key }}"
+                                   value="{{ old("limits.{$key}") }}"
+                                   class="block w-32 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            @if($config['suffix'])
+                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ $config['suffix'] }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @error('limits') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>

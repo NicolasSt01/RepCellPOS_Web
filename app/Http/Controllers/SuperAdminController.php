@@ -299,16 +299,23 @@ class SuperAdminController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
-            'features' => 'nullable|string',
-            'limits' => 'nullable|string',
+            'features' => 'nullable|array',
+            'features.*' => 'in:0,1',
+            'limits' => 'nullable|array',
+            'limits.*' => 'nullable|integer|min:-1',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'is_highlight' => 'boolean',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
-        $validated['features'] = $validated['features'] ? array_map('trim', explode("\n", $validated['features'])) : [];
-        $validated['limits'] = $validated['limits'] ? json_decode($validated['limits'], true) : [];
+        $validated['features'] = collect($validated['features'] ?? [])
+            ->map(fn($v) => (bool) $v)
+            ->toArray();
+        $validated['limits'] = collect($validated['limits'] ?? [])
+            ->map(fn($v) => $v !== null ? (int) $v : null)
+            ->filter(fn($v) => $v !== null)
+            ->toArray();
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_highlight'] = $request->boolean('is_highlight');
 
@@ -329,16 +336,23 @@ class SuperAdminController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
-            'features' => 'nullable|string',
-            'limits' => 'nullable|string',
+            'features' => 'nullable|array',
+            'features.*' => 'in:0,1',
+            'limits' => 'nullable|array',
+            'limits.*' => 'nullable|integer|min:-1',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'is_highlight' => 'boolean',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
-        $validated['features'] = $validated['features'] ? array_map('trim', explode("\n", $validated['features'])) : [];
-        $validated['limits'] = $validated['limits'] ? json_decode($validated['limits'], true) : [];
+        $validated['features'] = collect($validated['features'] ?? [])
+            ->map(fn($v) => (bool) $v)
+            ->toArray();
+        $validated['limits'] = collect($validated['limits'] ?? [])
+            ->map(fn($v) => $v !== null ? (int) $v : null)
+            ->filter(fn($v) => $v !== null)
+            ->toArray();
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_highlight'] = $request->boolean('is_highlight');
 

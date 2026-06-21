@@ -1,5 +1,8 @@
 @extends('layouts.app')
 
+@php $knownFeatures = config('plans.features'); @endphp
+@php $knownLimits = config('plans.limits'); @endphp
+
 @section('content')
 <div class="max-w-7xl mx-auto">
     <div class="flex items-center justify-between mb-6">
@@ -18,13 +21,13 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         @forelse($plans as $plan)
-        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden {{ $plan->is_highlight ? 'ring-2 ring-indigo-500' : '' }}">
+        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden flex flex-col {{ $plan->is_highlight ? 'ring-2 ring-indigo-500' : '' }}">
             @if($plan->is_highlight)
             <div class="bg-indigo-600 text-center py-1">
                 <span class="text-xs font-semibold text-white uppercase tracking-wider">Destacado</span>
             </div>
             @endif
-            <div class="p-6">
+            <div class="p-6 flex-1 flex flex-col">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $plan->name }}</h3>
                     @if(!$plan->is_active)
@@ -40,19 +43,47 @@
                 @endif
 
                 @if($plan->features)
-                <ul class="space-y-2 mb-6">
-                    @foreach($plan->features as $feature)
-                    <li class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <svg class="h-4 w-4 mt-0.5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                        {{ $feature }}
-                    </li>
-                    @endforeach
-                </ul>
+                <div class="mb-4">
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Características</p>
+                    <ul class="space-y-1.5">
+                        @foreach($knownFeatures as $key => $label)
+                        @php $enabled = $plan->features[$key] ?? false; @endphp
+                        <li class="flex items-center gap-2 text-sm {{ $enabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500' }}">
+                            @if($enabled)
+                            <svg class="h-4 w-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                            @else
+                            <svg class="h-4 w-4 text-gray-300 dark:text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            @endif
+                            {{ $label }}
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
                 @endif
 
-                <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+                @if($plan->limits)
+                <div class="mb-4">
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Límites</p>
+                    <ul class="space-y-1">
+                        @foreach($knownLimits as $key => $config)
+                        @php $value = $plan->limits[$key] ?? null; @endphp
+                        @if($value !== null)
+                        <li class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ $config['label'] }}:
+                            @if($value === -1)
+                            <span class="font-medium text-indigo-600 dark:text-indigo-400">Ilimitado</span>
+                            @else
+                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ number_format($value) }}</span>
+                            @if($config['suffix']) {{ $config['suffix'] }} @endif
+                            @endif
+                        </li>
+                        @endif
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+
+                <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700 mt-auto">
                     <span class="text-xs text-gray-500 dark:text-gray-400">
                         {{ $plan->tenants_count ?? 0 }} tenant(s)
                     </span>

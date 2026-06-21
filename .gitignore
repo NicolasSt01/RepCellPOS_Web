@@ -48,3 +48,6 @@ Instrucciones_Dockploy.md
 /test-results/
 /playwright-report/
 .env.e2e
+
+# AI agent skills locales
+/.claude/

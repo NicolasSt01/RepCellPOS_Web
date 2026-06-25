@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'not-superadmin' => \App\Http\Middleware\CheckNotSuperAdmin::class,
             'subscription.active' => \App\Http\Middleware\CheckTenantSubscription::class,
             'plan.feature' => \App\Http\Middleware\CheckPlanFeature::class,
+            'session.unique' => \App\Http\Middleware\CheckSingleSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

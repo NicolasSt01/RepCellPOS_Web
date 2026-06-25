@@ -30,7 +30,46 @@ Route::get('/__e2e/cleanup', function () {
     \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
     // Reset work order sequence for all tenants
     \Illuminate\Support\Facades\DB::table('tenants')->update(['work_order_sequence' => 0]);
+    // Clear log file to avoid detecting old errors
+    $logFile = storage_path('logs/laravel.log');
+    if (file_exists($logFile)) {
+        file_put_contents($logFile, '');
+    }
     return response()->json(['status' => 'cleaned']);
+});
+
+Route::get('/__e2e/verify-email', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    if (!$email) {
+        return response()->json(['error' => 'Email parameter required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+    \Illuminate\Support\Facades\DB::table('users')
+        ->where('id', $user->id)
+        ->update([
+            'email_verified_at' => now(),
+            'email_verification_token' => null,
+        ]);
+    return response()->json(['status' => 'email_verified', 'email' => $user->email]);
+});
+
+Route::get('/__e2e/expire-email-verification', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    if (!$email) {
+        return response()->json(['error' => 'Email parameter required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+    // Use raw DB update to bypass $fillable guard on created_at
+    \Illuminate\Support\Facades\DB::table('users')
+        ->where('id', $user->id)
+        ->update(['created_at' => now()->subDays(3)]);
+    return response()->json(['status' => 'verification_expired', 'email' => $user->email]);
 });
 
 Route::get('/__e2e/expire-trial', function (\Illuminate\Http\Request $request) {
@@ -121,4 +160,61 @@ Route::get('/__e2e/expire-subscription', function (\Illuminate\Http\Request $req
     );
 
     return response()->json(['status' => 'subscription_expired', 'tenant' => $tenant->name]);
+});
+
+Route::get('/__e2e/create-user', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    $newUserEmail = $request->query('new_email');
+    $newUserName = $request->query('new_name');
+    $role = $request->query('role', 'tecnico');
+    if (!$email || !$newUserEmail || !$newUserName) {
+        return response()->json(['error' => 'email, new_email, new_name parameters required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'User or tenant not found'], 404);
+    }
+    $newUser = \App\Models\User::create([
+        'name' => $newUserName,
+        'email' => $newUserEmail,
+        'password' => \Illuminate\Support\Facades\Hash::make('Password123'),
+        'tenant_id' => $user->tenant_id,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+    $newUser->assignRole($role);
+    return response()->json(['status' => 'user_created', 'user' => $newUser->name, 'role' => $role]);
+});
+
+Route::get('/__e2e/create-sale', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    if (!$email) {
+        return response()->json(['error' => 'Email parameter required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'User or tenant not found'], 404);
+    }
+    $tenant = $user->tenant;
+
+    $register = \App\Models\CashRegister::where('tenant_id', $tenant->id)->where('status', 'abierta')->first();
+    if (!$register) {
+        return response()->json(['error' => 'No open cash register'], 400);
+    }
+
+    \App\Models\Sale::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $user->id,
+        'cash_register_id' => $register->id,
+        'type' => 'venta_directa',
+        'subtotal' => 100,
+        'tax_total' => 16,
+        'total' => 116,
+        'payment_method' => 'efectivo',
+        'cash_amount' => 116,
+        'card_amount' => 0,
+        'change_amount' => 0,
+    ]);
+
+    return response()->json(['status' => 'sale_created', 'expected_cash' => $register->getExpectedCash()]);
 });

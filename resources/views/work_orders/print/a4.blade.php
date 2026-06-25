@@ -80,8 +80,17 @@
     @endif
 
     @if($workOrder->tracking_token)
-        <p style="font-size:12px;margin-top:15px;">
-            Siga el estado de su orden: {{ route('tracking.show', $workOrder->tracking_token) }}
+        @php $qrSvg = \App\Helpers\QrCodeHelper::svg(route('tracking.show', $workOrder->tracking_token), 120); @endphp
+        @if($qrSvg)
+            <div style="text-align:center;margin-top:15px;">
+                {!! $qrSvg !!}
+                <p style="font-size:11px;margin-top:4px;color:#555;">
+                    Escanee el código QR para dar seguimiento a su orden
+                </p>
+            </div>
+        @endif
+        <p style="font-size:10px;margin-top:8px;text-align:center;word-break:break-all;color:#666;">
+            {{ route('tracking.show', $workOrder->tracking_token) }}
         </p>
     @endif
 

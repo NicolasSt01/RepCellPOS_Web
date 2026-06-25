@@ -92,8 +92,20 @@
                     </tr>
 
                     <tr>
-                        <td style="padding:0 32px 20px;text-align:center;">
-                            <a href="{{ route('tracking.show', $workOrder->tracking_token) }}"
+                        <td style="padding:16px 32px 0;text-align:center;">
+                            @php
+                                $trackingUrl = route('tracking.show', $workOrder->tracking_token);
+                                $qrSvg = \App\Helpers\QrCodeHelper::svg($trackingUrl, 100);
+                            @endphp
+                            @if($qrSvg)
+                                <div>{!! $qrSvg !!}</div>
+                                <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">Escanee para dar seguimiento</p>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:12px 32px 20px;text-align:center;">
+                            <a href="{{ $trackingUrl }}"
                                style="display:inline-block;padding:12px 24px;background-color:#2563eb;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">
                                 Dar seguimiento a mi orden
                             </a>

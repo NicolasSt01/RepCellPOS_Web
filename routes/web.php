@@ -30,6 +30,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [TenantController::class, 'register']);
 });
 
+// Email verification — accessible without subscription check
+Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('verification.verify');
+
 // Logout must be accessible to all authenticated users including superadmin
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
@@ -38,9 +41,10 @@ Route::middleware(['auth', 'not-superadmin'])->group(function () {
     Route::get('/upgrade', [\App\Http\Controllers\SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
     Route::post('/upgrade/select', [\App\Http\Controllers\SubscriptionController::class, 'selectPlan'])->name('subscription.select');
     Route::post('/upgrade/payment-proof', [\App\Http\Controllers\SubscriptionController::class, 'uploadProof'])->name('subscription.payment-proof');
+    Route::get('/suspended', [\App\Http\Controllers\SubscriptionController::class, 'suspended'])->name('subscription.suspended');
 });
 
-Route::middleware(['auth', 'not-superadmin', 'subscription.active'])->group(function () {
+Route::middleware(['auth', 'not-superadmin', 'subscription.active', 'session.unique'])->group(function () {
     Route::get('/r2/{path}', function ($path) {
         if (!\Illuminate\Support\Facades\Storage::disk('r2')->exists($path)) {
             abort(404);

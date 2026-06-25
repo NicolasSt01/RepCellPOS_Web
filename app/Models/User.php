@@ -23,6 +23,8 @@ class User extends Authenticatable
         'tenant_id',
         'is_superadmin',
         'is_active',
+        'email_verification_token',
+        'session_token',
     ];
 
     protected $hidden = [

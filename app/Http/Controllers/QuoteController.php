@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\WorkOrder;
+use App\Services\NotificationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -94,6 +95,7 @@ class QuoteController extends Controller
 
         try {
             $quote->approve();
+            app(NotificationService::class)->send($quote->workOrder, 'quote_approved');
         } catch (\RuntimeException $e) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
@@ -120,6 +122,7 @@ class QuoteController extends Controller
         }
 
         $quote->reject($request->input('reason'));
+        app(NotificationService::class)->send($quote->workOrder, 'quote_rejected');
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Cotización rechazada correctamente.']);

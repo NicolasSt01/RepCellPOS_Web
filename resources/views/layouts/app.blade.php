@@ -232,6 +232,12 @@
                     </div>
                 @endif
 
+                @if(session('warning'))
+                    <div class="mb-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-4 border border-yellow-200 dark:border-yellow-800">
+                        <p class="text-sm text-yellow-800 dark:text-yellow-200 font-medium">{{ session('warning') }}</p>
+                    </div>
+                @endif
+
                 @yield('content')
             </main>
         </div>

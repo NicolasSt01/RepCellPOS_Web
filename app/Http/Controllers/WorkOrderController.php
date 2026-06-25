@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\WorkOrderReceipt;
 use App\Models\Client;
 use App\Models\Tenant;
 use App\Models\TenantClause;
 use App\Models\User;
 use App\Models\WorkOrder;
+use App\Services\NotificationService;
 use App\Services\R2StorageService;
-use App\Services\TenantMailService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 
@@ -194,16 +192,10 @@ class WorkOrderController extends Controller
         $redirect = redirect()->route('work_orders.print', $workOrder)
             ->with('success', "Orden de trabajo {$workOrderNumber} creada exitosamente.");
 
-        if ($workOrder->client->notification_preference === 'email' && $workOrder->client->email) {
-            try {
-                if ($tenant->mail_host && $tenant->mail_username && $tenant->mail_password) {
-                    app(TenantMailService::class)->configureForTenant($tenant);
-                    Mail::to($workOrder->client->email)
-                        ->send(new WorkOrderReceipt($workOrder, $tenant));
-                }
-            } catch (\Exception $e) {
-                logger()->error('Error enviando correo de OT: ' . $e->getMessage());
-            }
+        try {
+            app(NotificationService::class)->send($workOrder, 'order_created');
+        } catch (\Exception $e) {
+            logger()->error('Error notificando creación de OT: ' . $e->getMessage());
         }
 
         return $redirect;
@@ -286,10 +278,17 @@ class WorkOrderController extends Controller
 
     public function changeStatus(Request $request, WorkOrder $workOrder): RedirectResponse
     {
+        $this->authorizeTenant($workOrder);
+
         $validated = $request->validate([
             'status' => 'required|string',
             'comment' => 'nullable|string|max:1000',
         ]);
+
+        if (!$workOrder->canTransitionTo($validated['status'])) {
+            return redirect()->route('work_orders.show', $workOrder)
+                ->with('error', 'No es posible cambiar al estado seleccionado desde el estado actual.');
+        }
 
         $workOrder->update(['status' => $validated['status']]);
         $workOrder->addTimelineEvent(
@@ -297,6 +296,15 @@ class WorkOrderController extends Controller
             Auth::user()->name,
             $validated['comment'] ?? null
         );
+
+        try {
+            app(NotificationService::class)->send(
+                $workOrder, 'status_changed', null,
+                ['to_status' => $validated['status'], 'comment' => $validated['comment'] ?? null]
+            );
+        } catch (\Exception $e) {
+            logger()->error('Error notificando cambio de estado: ' . $e->getMessage());
+        }
 
         return redirect()->route('work_orders.show', $workOrder)
             ->with('success', 'Estado actualizado exitosamente.');

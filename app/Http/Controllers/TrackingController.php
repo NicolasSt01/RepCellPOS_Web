@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\WorkOrder;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +53,12 @@ class TrackingController extends Controller
                 $workOrder->addTimelineEvent('cotizacion_aprobada', 'Cliente', 'Cotización aprobada por el cliente — stock reservado');
             });
 
+            try {
+                app(NotificationService::class)->send($workOrder, 'quote_approved');
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error notificando aprobación desde tracking: ' . $e->getMessage());
+            }
+
             return redirect()->route('tracking.show', $token)
                 ->with('success', 'Cotización aprobada correctamente.');
         } catch (\RuntimeException $e) {
@@ -77,8 +84,15 @@ class TrackingController extends Controller
 
         DB::transaction(function () use ($quote, $workOrder, $reason) {
             $quote->update(['status' => 'rechazada', 'cancellation_reason' => $reason]);
-            $workOrder->addTimelineEvent('cotizacion_enviada', 'Cliente', 'Cotización rechazada por el cliente.' . ($reason ? " Motivo: {$reason}" : ''));
+            $workOrder->update(['status' => 'cancelada']);
+            $workOrder->addTimelineEvent('cancelada', 'Cliente', 'Cotización rechazada por el cliente.' . ($reason ? " Motivo: {$reason}" : ''));
         });
+
+        try {
+            app(NotificationService::class)->send($workOrder, 'quote_rejected');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error notificando rechazo desde tracking: ' . $e->getMessage());
+        }
 
         return redirect()->route('tracking.show', $token)
             ->with('info', 'Cotización rechazada.');

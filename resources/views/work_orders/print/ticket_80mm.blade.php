@@ -86,7 +86,14 @@
     <div class="footer">
         <p>¡Gracias por su preferencia!</p>
         @if($workOrder->tracking_token)
-            <p>Siga su orden: {{ route('tracking.show', $workOrder->tracking_token) }}</p>
+            @php
+                $qrSvg = \App\Helpers\QrCodeHelper::svg(route('tracking.show', $workOrder->tracking_token), 80);
+            @endphp
+            @if($qrSvg)
+                <div style="text-align:center;margin-top:6px;">{!! $qrSvg !!}</div>
+                <p style="font-size:8px;margin-top:2px;">Escanee para dar seguimiento</p>
+            @endif
+            <p style="font-size:7px;margin-top:4px;word-break:break-all;">{{ route('tracking.show', $workOrder->tracking_token) }}</p>
         @endif
     </div>
 

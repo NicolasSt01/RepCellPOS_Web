@@ -47,6 +47,7 @@ class TenantController extends Controller
                 'password' => Hash::make($validated['admin_password']),
                 'tenant_id' => $tenant->id,
                 'is_active' => true,
+                'email_verification_token' => Str::random(60),
             ]);
 
             $user->assignRole('admin_tenant');

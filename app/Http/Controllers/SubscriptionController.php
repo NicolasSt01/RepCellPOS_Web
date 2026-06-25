@@ -4,12 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\TenantSubscription;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\R2StorageService;
 
 class SubscriptionController extends Controller
 {
+    public function suspended()
+    {
+        $tenant = Auth::user()->tenant;
+        $admin = User::where('tenant_id', $tenant->id)
+            ->role('admin_tenant')
+            ->first();
+
+        return view('subscription.suspended', compact('tenant', 'admin'));
+    }
+
     public function upgrade()
     {
         $tenant = Auth::user()->tenant;

@@ -18,6 +18,12 @@
 
         <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
             <div class="bg-white dark:bg-gray-800 px-6 py-8 shadow-sm sm:rounded-lg sm:px-12 border border-gray-200 dark:border-gray-700">
+                @if(session('session_expired'))
+                    <div class="mb-4 rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+                        <p class="text-sm text-red-800 dark:text-red-200">{{ session('session_expired') }}</p>
+                    </div>
+                @endif
+
                 @if($errors->any())
                     <div class="mb-4 rounded-md bg-red-50 dark:bg-red-900/20 p-4">
                         @foreach($errors->all() as $error)

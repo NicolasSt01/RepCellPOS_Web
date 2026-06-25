@@ -6,10 +6,11 @@ use App\Models\Client;
 use App\Models\Notification;
 use App\Models\NotificationTemplate;
 use App\Models\WorkOrder;
+use Illuminate\Support\Facades\Config;
 
 class NotificationService
 {
-    public function send(WorkOrder $workOrder, string $event, ?string $customMessage = null): ?Notification
+    public function send(WorkOrder $workOrder, string $event, ?string $customMessage = null, array $metadata = []): ?Notification
     {
         $client = $workOrder->client;
 
@@ -36,22 +37,22 @@ class NotificationService
             'tracking_token' => $trackingToken,
         ]);
 
-        $this->dispatch($notification, $client, $workOrder);
+        $this->dispatch($notification, $client, $workOrder, $metadata);
 
         return $notification;
     }
 
-    protected function dispatch(Notification $notification, Client $client, WorkOrder $workOrder): void
+    protected function dispatch(Notification $notification, Client $client, WorkOrder $workOrder, array $metadata = []): void
     {
         match ($client->notification_preference) {
-            'email' => $this->sendEmail($notification, $client, $workOrder),
+            'email' => $this->sendEmail($notification, $client, $workOrder, $metadata),
             'whatsapp' => $this->sendWhatsapp($notification, $client, $workOrder),
             'call' => $notification->markAsLogged(),
             default => $notification->markAsFailed('Canal no soportado'),
         };
     }
 
-    protected function sendEmail(Notification $notification, Client $client, WorkOrder $workOrder): void
+    protected function sendEmail(Notification $notification, Client $client, WorkOrder $workOrder, array $metadata = []): void
     {
         if (!$client->email) {
             $notification->markAsFailed('Cliente sin email');
@@ -60,16 +61,26 @@ class NotificationService
 
         try {
             $tenant = $workOrder->tenant;
-            if (!$tenant->mail_host || !$tenant->mail_username || !$tenant->mail_password) {
+            $isLogMailer = Config::get('mail.default') === 'log';
+
+            if (!$isLogMailer && (!$tenant->mail_host || !$tenant->mail_username || !$tenant->mail_password)) {
                 $notification->markAsLogged('SMTP no configurado');
                 return;
             }
 
-            app(TenantMailService::class)->configureForTenant($tenant);
+            if (!$isLogMailer) {
+                app(TenantMailService::class)->configureForTenant($tenant);
+            }
 
             $mailable = match ($notification->event) {
                 'order_created' => new \App\Mail\WorkOrderReceipt($workOrder, $tenant),
-                default => new \App\Mail\WorkOrderReceipt($workOrder, $tenant),
+                'status_changed' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, $metadata['to_status'] ?? $workOrder->status, $metadata['comment'] ?? null),
+                'quote_sent' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'cotizacion_enviada'),
+                'quote_approved' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'cotizacion_aprobada'),
+                'quote_rejected' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'cancelada'),
+                'repair_completed' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'reparada'),
+                'ready_for_pickup' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'terminada'),
+                default => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, $notification->event),
             };
 
             \Illuminate\Support\Facades\Mail::to($client->email)->send($mailable);

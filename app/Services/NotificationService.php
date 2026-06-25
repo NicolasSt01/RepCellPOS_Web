@@ -79,7 +79,8 @@ class NotificationService
                 'quote_approved' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'cotizacion_aprobada'),
                 'quote_rejected' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'cancelada'),
                 'repair_completed' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'reparada'),
-                'ready_for_pickup' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'terminada'),
+                'ready_for_pickup' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'reparada'),
+                'pickup_reminder' => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, 'reparada', 'Recordatorio: su equipo sigue listo para recoger'),
                 default => new \App\Mail\WorkOrderStatusChanged($workOrder, $tenant, $notification->event),
             };
 
@@ -148,8 +149,9 @@ class NotificationService
             'quote_approved' => "Tu cotización fue aprobada. Tu equipo está en reparación. Orden: {$workOrder->work_order_number}. {$trackingUrl}",
             'quote_rejected' => "La cotización fue rechazada. Orden: {$workOrder->work_order_number}. {$trackingUrl}",
             'repair_completed' => "La reparación de tu equipo fue completada. Orden: {$workOrder->work_order_number}. {$trackingUrl}",
-            'ready_for_pickup' => "Tu equipo está listo para recoger. Orden: {$workOrder->work_order_number}. {$trackingUrl}",
-            default => "Actualización en tu orden {$workOrder->work_order_number}. {$trackingUrl}",
+                'ready_for_pickup' => "Tu equipo está listo para recoger. Orden: {$workOrder->work_order_number}. {$trackingUrl}",
+                'pickup_reminder' => "Recordatorio: tu equipo sigue listo para recoger. Orden: {$workOrder->work_order_number}. {$trackingUrl}",
+                default => "Actualización en tu orden {$workOrder->work_order_number}. {$trackingUrl}",
         };
     }
 }

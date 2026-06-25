@@ -298,10 +298,12 @@ class WorkOrderController extends Controller
         );
 
         try {
-            app(NotificationService::class)->send(
-                $workOrder, 'status_changed', null,
-                ['to_status' => $validated['status'], 'comment' => $validated['comment'] ?? null]
-            );
+            $metadata = ['to_status' => $validated['status'], 'comment' => $validated['comment'] ?? null];
+            app(NotificationService::class)->send($workOrder, 'status_changed', null, $metadata);
+
+            if ($validated['status'] === 'reparada') {
+                app(NotificationService::class)->send($workOrder, 'ready_for_pickup', null, $metadata);
+            }
         } catch (\Exception $e) {
             logger()->error('Error notificando cambio de estado: ' . $e->getMessage());
         }

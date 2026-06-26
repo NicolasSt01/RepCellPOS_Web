@@ -11,10 +11,10 @@ class SuperAdminSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate(
-            ['email' => 'admin@repcellpos.com'],
+            ['email' => 'admin@nexacore.com.mx'],
             [
                 'name' => 'Superadmin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Cb15a33a1c.RB'),
                 'is_superadmin' => true,
                 'is_active' => true,
             ]

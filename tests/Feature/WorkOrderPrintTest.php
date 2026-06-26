@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Client;
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\TenantClause;
 use App\Models\User;
@@ -24,8 +25,22 @@ class WorkOrderPrintTest extends TestCase
     {
         parent::setUp();
 
-        $this->tenant = Tenant::factory()->create(['print_format' => 'ticket_80mm']);
-        $this->otherTenant = Tenant::factory()->create();
+        $plan = Plan::create([
+            'name' => 'Unlimited',
+            'slug' => 'unlimited',
+            'price' => 0,
+            'features' => ['work_orders' => true, 'quotes' => true, 'pos' => true, 'notifications_email' => true, 'notifications_whatsapp' => true],
+            'limits' => ['max_users' => -1, 'max_clients' => -1, 'max_monthly_work_orders' => -1, 'storage_mb' => -1],
+            'is_active' => true,
+        ]);
+
+        $this->tenant = Tenant::factory()->create([
+            'plan_id' => $plan->id,
+            'print_format' => 'ticket_80mm',
+        ]);
+        $this->otherTenant = Tenant::factory()->create([
+            'plan_id' => $plan->id,
+        ]);
 
         $this->user = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $this->otherUser = User::factory()->create(['tenant_id' => $this->otherTenant->id]);

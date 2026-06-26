@@ -284,7 +284,6 @@
                                                 <div class="w-4 h-4 rounded-full border-2 transition-colors duration-200"
                                                     :class="pattern.includes(i) ? 'bg-indigo-600 border-indigo-600 scale-150' : 'border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-700'"
                                                     :data-dot="i"
-                                                    x-ref="`dot${i}`"
                                                     ></div>
                                             </div>
                                         </template>
@@ -552,17 +551,16 @@ document.addEventListener('alpine:init', () => {
 
         getDotPositions() {
             const positions = [];
-            for (let i = 1; i <= 9; i++) {
-                const dot = this.$refs[`dot${i}`];
-                if(dot) {
-                    const rect = dot.getBoundingClientRect();
-                    const containerRect = this.$refs.patternContainer.getBoundingClientRect();
-                    positions[i] = {
-                        x: rect.left - containerRect.left + rect.width / 2,
-                        y: rect.top - containerRect.top + rect.height / 2
-                    };
-                }
-            }
+            const container = this.$refs.patternContainer;
+            const containerRect = container.getBoundingClientRect();
+            container.querySelectorAll('[data-dot]').forEach(dot => {
+                const i = parseInt(dot.dataset.dot);
+                const rect = dot.getBoundingClientRect();
+                positions[i] = {
+                    x: rect.left - containerRect.left + rect.width / 2,
+                    y: rect.top - containerRect.top + rect.height / 2
+                };
+            });
             return positions;
         },
 

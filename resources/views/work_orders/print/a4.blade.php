@@ -35,8 +35,9 @@
 <body>
     @if(!isset($pdf))
     <div class="no-print">
-        <button onclick="window.print()">🖨 Imprimir</button>
-        <button onclick="window.location.href='{{ route('work_orders.print.pdf', $workOrder) }}'">⬇ Descargar PDF</button>
+        <button onclick="window.print()" style="padding:8px 16px;font-size:14px;margin:0 5px;cursor:pointer;">🖨 Imprimir</button>
+        <button onclick="window.location.href='{{ route('work_orders.print.pdf', $workOrder) }}'" style="padding:8px 16px;font-size:14px;margin:0 5px;cursor:pointer;">⬇ Descargar PDF</button>
+        <button onclick="window.location.href='{{ route('work_orders.index') }}'" style="padding:8px 16px;font-size:14px;margin:0 5px;cursor:pointer;background:#4f46e5;color:white;border:none;border-radius:4px;">✕ Cerrar Vista Previa</button>
     </div>
     @endif
 
@@ -60,6 +61,8 @@
         <tr><td>Equipo</td><td>{{ $workOrder->device_brand }} {{ $workOrder->device_model }}</td></tr>
         @if($workOrder->device_serial)<tr><td>Número de Serie</td><td>{{ $workOrder->device_serial }}</td></tr>@endif
         @if($workOrder->device_imei)<tr><td>IMEI</td><td>{{ $workOrder->device_imei }}</td></tr>@endif
+        @if($workOrder->unlock_pattern)<tr><td>Patrón de Desbloqueo</td><td>{{ $workOrder->unlock_pattern }}</td></tr>@endif
+        @if($workOrder->unlock_pin)<tr><td>PIN</td><td>{{ $workOrder->unlock_pin }}</td></tr>@endif
     </table>
 
     <div class="section-title">Problema Reportado</div>
@@ -105,7 +108,10 @@
     </div>
 
     @if(!isset($pdf))
-    <script>window.onload=function(){window.print();}</script>
+    <script>
+        window.onafterprint = function(){ window.location.href = '{{ route('work_orders.index') }}'; };
+        window.onload = function(){ window.print(); };
+    </script>
     @endif
 </body>
 </html>

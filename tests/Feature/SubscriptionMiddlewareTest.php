@@ -6,6 +6,7 @@ use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class SubscriptionMiddlewareTest extends TestCase
@@ -41,7 +42,11 @@ class SubscriptionMiddlewareTest extends TestCase
             'is_active' => true,
         ]);
 
-        return User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        Role::firstOrCreate(['name' => 'admin_tenant', 'guard_name' => 'web']);
+        $user->assignRole('admin_tenant');
+
+        return $user;
     }
 
     public function test_trial_tenant_can_access_dashboard(): void

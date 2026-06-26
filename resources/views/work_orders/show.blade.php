@@ -69,7 +69,26 @@
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Patrón de Desbloqueo</dt>
-                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $workOrder->unlock_pattern ?? '—' }}</dd>
+                            <dd class="mt-1">
+                                @if($workOrder->unlock_pattern)
+                                <canvas class="pattern-visualizer" data-pattern="{{ $workOrder->unlock_pattern }}" width="120" height="120" style="max-width:120px;height:auto;"></canvas>
+                                <div class="mt-2 flex items-center gap-1 text-xs font-mono text-gray-600 dark:text-gray-400">
+                                    @foreach(str_split($workOrder->unlock_pattern) as $i => $dot)
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold">{{ $dot }}</span>
+                                    @if($i < strlen($workOrder->unlock_pattern) - 1)
+                                    <svg class="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                                    @endif
+                                    @endforeach
+                                </div>
+                                <div class="mt-1.5 grid grid-cols-3 w-24 gap-0 border border-gray-200 dark:border-gray-600 rounded overflow-hidden">
+                                    @for($i = 1; $i <= 9; $i++)
+                                    <div class="flex items-center justify-center h-6 text-[10px] font-mono font-bold {{ in_array((string)$i, str_split($workOrder->unlock_pattern)) ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500' }}">{{ $i }}</div>
+                                    @endfor
+                                </div>
+                                @else
+                                <span class="text-sm text-gray-900 dark:text-gray-100">—</span>
+                                @endif
+                            </dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">PIN</dt>
@@ -433,6 +452,56 @@ document.addEventListener('alpine:init', () => {
             this.$refs.fileInput.value = '';
         },
     }));
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.pattern-visualizer').forEach(canvas => {
+        const patternStr = canvas.dataset.pattern;
+        if (!patternStr) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        const margin = 14;
+        const spacingX = (w - 2 * margin) / 2;
+        const spacingY = (h - 2 * margin) / 2;
+
+        const pos = {};
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                pos[r * 3 + c + 1] = { x: margin + c * spacingX, y: margin + r * spacingY };
+            }
+        }
+
+        const pattern = patternStr.split('').map(Number);
+
+        // Draw lines
+        if (pattern.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(pos[pattern[0]].x, pos[pattern[0]].y);
+            for (let i = 1; i < pattern.length; i++) {
+                ctx.lineTo(pos[pattern[i]].x, pos[pattern[i]].y);
+            }
+            ctx.strokeStyle = '#4f46e5';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        // Draw dots
+        for (let i = 1; i <= 9; i++) {
+            const p = pos[i];
+            const active = pattern.includes(i);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = active ? '#4f46e5' : '#fff';
+            ctx.fill();
+            ctx.strokeStyle = active ? '#4f46e5' : '#9ca3af';
+            ctx.lineWidth = active ? 2 : 1.5;
+            ctx.stroke();
+        }
+    });
 });
 </script>
 @endpush

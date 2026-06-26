@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Mail\WorkOrderReceipt;
 use App\Models\Client;
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkOrder;
@@ -24,17 +25,30 @@ class WorkOrderMailTest extends TestCase
 
         Mail::fake();
 
+        $plan = Plan::create([
+            'name' => 'Unlimited',
+            'slug' => 'unlimited',
+            'price' => 0,
+            'features' => ['work_orders' => true, 'quotes' => true, 'pos' => true, 'notifications_email' => true, 'notifications_whatsapp' => true],
+            'limits' => ['max_users' => -1, 'max_clients' => -1, 'max_monthly_work_orders' => -1, 'storage_mb' => -1],
+            'is_active' => true,
+        ]);
+
         $this->tenant = Tenant::factory()->create([
+            'plan_id' => $plan->id,
             'mail_host' => 'smtp.test.com',
             'mail_port' => '587',
             'mail_username' => 'test@test.com',
-            'mail_password' => encrypt('password'),
+            'mail_password' => 'password',
             'mail_encryption' => 'tls',
             'mail_from_address' => 'test@test.com',
             'mail_from_name' => 'Test',
         ]);
 
         $this->user = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $token = \Illuminate\Support\Str::random(60);
+        $this->user->update(['session_token' => $token]);
+        session(['session_token' => $token]);
         $this->actingAs($this->user);
     }
 
@@ -54,6 +68,14 @@ class WorkOrderMailTest extends TestCase
         ]);
 
         $workOrder = WorkOrder::where('tenant_id', $this->tenant->id)->latest()->first();
+        $this->assertNotNull($workOrder, 'Work order was not created');
+
+        // Check notification was created
+        $this->assertDatabaseHas('notifications', [
+            'work_order_id' => $workOrder->id,
+            'event' => 'order_created',
+        ]);
+
         Mail::assertSent(WorkOrderReceipt::class, function ($mail) use ($workOrder, $client) {
             return $mail->hasTo($client->email)
                 && $mail->workOrder->id === $workOrder->id;

@@ -343,6 +343,10 @@ class ReturnTest extends TestCase
 
         $this->actingAs($otherUser);
         $otherUser->givePermissionTo('pos.access');
+        // Sync session token for session.unique middleware
+        $token = \Illuminate\Support\Str::random(60);
+        $otherUser->update(['session_token' => $token]);
+        session(['session_token' => $token]);
         $response = $this->post(route('returns.search_sale'), [
             'folio' => (string) $sale->id,
         ]);

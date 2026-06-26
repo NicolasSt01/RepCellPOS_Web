@@ -30,7 +30,7 @@ class QuoteNotificationTest extends TestCase
             'mail_host' => 'smtp.test.com',
             'mail_port' => '587',
             'mail_username' => 'test@test.com',
-            'mail_password' => encrypt('password'),
+            'mail_password' => 'password',
             'mail_encryption' => 'tls',
             'mail_from_address' => 'test@test.com',
             'mail_from_name' => 'Test',

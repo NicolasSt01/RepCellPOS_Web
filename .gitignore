@@ -47,7 +47,17 @@ Instrucciones_Dockploy.md
 /playwright.config.ts
 /test-results/
 /playwright-report/
+/playwright-cli/
 .env.e2e
+
+# Playwright sessions & screenshots
+/.playwright-cli/
+pattern-drawn.png
+show-pattern.png
+show-pattern-v2.png
+
+# Auth state
+tester.json
 
 # AI agent skills locales
 /.claude/

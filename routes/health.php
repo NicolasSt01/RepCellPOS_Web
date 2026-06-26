@@ -218,3 +218,46 @@ Route::get('/__e2e/create-sale', function (\Illuminate\Http\Request $request) {
 
     return response()->json(['status' => 'sale_created', 'expected_cash' => $register->getExpectedCash()]);
 });
+
+Route::get('/__e2e/set-work-order-status', function (\Illuminate\Http\Request $request) {
+    $id = $request->query('id');
+    $status = $request->query('status');
+    if (!$id || !$status) {
+        return response()->json(['error' => 'id and status required'], 400);
+    }
+    $workOrder = \App\Models\WorkOrder::find($id);
+    if (!$workOrder) {
+        return response()->json(['error' => 'Work order not found'], 404);
+    }
+    $workOrder->update(['status' => $status]);
+    return response()->json(['status' => 'ok', 'new_status' => $status]);
+});
+
+Route::get('/__e2e/simulate-pickup-reminder', function (\Illuminate\Http\Request $request) {
+    $id = $request->query('id');
+    if (!$id) {
+        return response()->json(['error' => 'work_order_id required'], 400);
+    }
+
+    $workOrder = \App\Models\WorkOrder::find($id);
+    if (!$workOrder) {
+        return response()->json(['error' => 'Work order not found'], 404);
+    }
+
+    // Backdate to 4 days ago so it exceeds the 3-day threshold
+    $workOrder->update(['updated_at' => now()->subDays(4)]);
+
+    // Mark all ready_for_pickup notifications as sent
+    \App\Models\Notification::where('work_order_id', $id)
+        ->where('event', 'ready_for_pickup')
+        ->update(['status' => 'sent']);
+
+    // Run the reminder command with --days=0 so it catches our backdated order
+    try {
+        \Illuminate\Support\Facades\Artisan::call('pickup:remind', ['--days' => 0]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response()->json(['status' => 'reminder_simulated', 'artisan_output' => $output]);
+    } catch (\Exception $e) {
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+});

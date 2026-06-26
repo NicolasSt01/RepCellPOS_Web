@@ -26,7 +26,7 @@ return new class extends Migration
             $table->enum('status', ['pending', 'sent', 'failed', 'logged'])->default('pending');
             $table->text('message')->nullable();
             $table->text('response')->nullable();
-            $table->string('tracking_token')->nullable()->unique();
+            $table->string('tracking_token')->nullable();
             $table->timestamp('sent_at')->nullable();
             $table->timestamps();
         });

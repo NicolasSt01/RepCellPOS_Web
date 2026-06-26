@@ -10,6 +10,7 @@ use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\TenantController;
@@ -131,10 +132,16 @@ Route::middleware(['auth', 'not-superadmin', 'subscription.active', 'session.uni
     Route::put('/settings/taxes', [SettingsController::class, 'updateTaxes'])->name('settings.taxes.update')->middleware('can:settings.taxes');
 
     Route::post('/settings/notifications/templates', [SettingsController::class, 'updateNotificationTemplate'])->name('settings.notifications.templates.update')->middleware('can:settings.company');
+
+    // Reportes
+    Route::get('/reportes', [ReportController::class, 'index'])->name('reportes.index');
 }); // ends subscription.active group
 
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [SuperAdminController::class, 'dashboard'])->name('dashboard');
+
+    // Reportes SuperAdmin
+    Route::get('/reportes', [ReportController::class, 'index'])->name('reportes.index');
 
     Route::get('tenants', [App\Http\Controllers\SuperAdminController::class, 'tenants'])->name('tenants.index');
     Route::get('tenants/{tenant}', [App\Http\Controllers\SuperAdminController::class, 'tenantDetail'])->name('tenants.show');

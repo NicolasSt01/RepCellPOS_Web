@@ -40,7 +40,8 @@ class ReportController extends Controller
         } else {
             $tenant = $user->tenant;
             $reports = collect($allReports)->filter(function ($report) use ($tenant) {
-                return $tenant->hasFeature($report['plan_feature']);
+                return ($report['area'] ?? '') !== 'SuperAdmin'
+                    && $tenant->hasFeature($report['plan_feature']);
             })->all();
         }
 

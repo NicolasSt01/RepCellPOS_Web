@@ -48,7 +48,6 @@
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Esperado</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Real</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Diferencia</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incidentes</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Abierto</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cerrado</th>
                     </tr>
@@ -64,15 +63,6 @@
                         <td class="px-6 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap text-right">{{ App\Helpers\ReportHelper::formatMoney($reg->expected_amount) }}</td>
                         <td class="px-6 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap text-right">{{ App\Helpers\ReportHelper::formatMoney($reg->closing_amount) }}</td>
                         <td class="px-6 py-3 text-sm whitespace-nowrap text-right font-medium {{ $diffColor }}">{{ App\Helpers\ReportHelper::formatMoney($reg->difference) }}</td>
-                        <td class="px-6 py-3 whitespace-nowrap text-center">
-                            @if($reg->incidents_count > 0)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
-                                {{ $reg->incidents_count }}
-                            </span>
-                            @else
-                            <span class="text-gray-400 dark:text-gray-500 text-xs">—</span>
-                            @endif
-                        </td>
                         <td class="px-6 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap text-right">{{ App\Helpers\ReportHelper::formatDate($reg->opened_at, 'd/m/Y H:i') }}</td>
                         <td class="px-6 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap text-right">{{ App\Helpers\ReportHelper::formatDate($reg->closed_at, 'd/m/Y H:i') }}</td>
                     </tr>

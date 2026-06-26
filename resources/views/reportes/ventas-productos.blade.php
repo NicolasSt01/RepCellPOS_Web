@@ -67,7 +67,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $product->category_name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ $product->total_qty }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ App\Helpers\ReportHelper::formatMoney($product->total_revenue) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ App\Helpers\ReportHelper::porcentaje($product->percentage) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ number_format($product->percentage, 1) }}%</td>
                     </tr>
                     @empty
                     <tr>

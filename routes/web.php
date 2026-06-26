@@ -136,21 +136,21 @@ Route::middleware(['auth', 'not-superadmin', 'subscription.active', 'session.uni
     // Reportes
     Route::get('/reportes', [ReportController::class, 'index'])->name('reportes.index');
     Route::get('/reportes/ventas-periodo', [ReportController::class, 'ventasPeriodo'])->name('reportes.ventas.periodo');
-    Route::get('/reportes/ventas-productos', [ReportController::class, 'ventasProductos'])->name('reportes.ventas.productos');
-    Route::get('/reportes/ventas-pago', [ReportController::class, 'ventasPago'])->name('reportes.ventas.pago');
-    Route::get('/reportes/ventas-ticket', [ReportController::class, 'ventasTicket'])->name('reportes.ventas.ticket');
+    Route::get('/reportes/ventas-productos', [ReportController::class, 'ventasProductos'])->name('reportes.ventas-productos');
+    Route::get('/reportes/ventas-pago', [ReportController::class, 'ventasPago'])->name('reportes.ventas-pago');
+    Route::get('/reportes/ventas-ticket', [ReportController::class, 'ventasTicket'])->name('reportes.ventas-ticket');
     Route::get('/reportes/taller-productividad', [ReportController::class, 'productividad'])->name('reportes.taller.productividad');
     Route::get('/reportes/taller-cotizaciones', [ReportController::class, 'cotizaciones'])->name('reportes.taller.cotizaciones');
-    Route::get('/reportes/taller-dispositivos', [ReportController::class, 'dispositivos'])->name('reportes.taller.dispositivos');
-    Route::get('/reportes/taller-sla', [ReportController::class, 'sla'])->name('reportes.taller.sla');
-    Route::get('/reportes/taller-ciclo-vida', [ReportController::class, 'cicloVida'])->name('reportes.taller.ciclo-vida');
+    Route::get('/reportes/taller-dispositivos', [ReportController::class, 'dispositivos'])->name('reportes.dispositivos');
+    Route::get('/reportes/taller-sla', [ReportController::class, 'sla'])->name('reportes.sla');
+    Route::get('/reportes/taller-ciclo-vida', [ReportController::class, 'cicloVida'])->name('reportes.ciclo-vida');
     Route::get('/reportes/inventario-valorizacion', [ReportController::class, 'valorizacionStock'])->name('reportes.inventario.valorizacion');
-    Route::get('/reportes/inventario-rotacion', [ReportController::class, 'rotacionInventario'])->name('reportes.inventario.rotacion');
-    Route::get('/reportes/inventario-kardex', [ReportController::class, 'kardex'])->name('reportes.inventario.kardex');
+    Route::get('/reportes/inventario-rotacion', [ReportController::class, 'rotacionInventario'])->name('reportes.rotacion');
+    Route::get('/reportes/inventario-kardex', [ReportController::class, 'kardex'])->name('reportes.kardex');
     Route::get('/reportes/caja-cuadre', [ReportController::class, 'cuadreCaja'])->name('reportes.caja.cuadre');
-    Route::get('/reportes/caja-flujo', [ReportController::class, 'flujoEfectivo'])->name('reportes.caja.flujo');
-    Route::get('/reportes/clientes-retencion', [ReportController::class, 'retencionClientes'])->name('reportes.clientes.retencion');
-    Route::get('/reportes/clientes-top', [ReportController::class, 'topClientes'])->name('reportes.clientes.top');
+    Route::get('/reportes/caja-flujo', [ReportController::class, 'flujoEfectivo'])->name('reportes.flujo-efectivo');
+    Route::get('/reportes/clientes-retencion', [ReportController::class, 'retencionClientes'])->name('reportes.retencion-clientes');
+    Route::get('/reportes/clientes-top', [ReportController::class, 'topClientes'])->name('reportes.top-clientes');
     Route::get('/reportes/cotizaciones-aprobacion', [ReportController::class, 'aprobacionCotizaciones'])->name('reportes.cotizaciones.aprobacion');
 }); // ends subscription.active group
 
@@ -160,21 +160,21 @@ Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->grou
     // Reportes SuperAdmin
     Route::get('/reportes', [ReportController::class, 'index'])->name('reportes.index');
     Route::get('/reportes/ventas-periodo', [ReportController::class, 'ventasPeriodo'])->name('reportes.ventas.periodo');
-    Route::get('/reportes/ventas-productos', [ReportController::class, 'ventasProductos'])->name('reportes.ventas.productos');
-    Route::get('/reportes/ventas-pago', [ReportController::class, 'ventasPago'])->name('reportes.ventas.pago');
-    Route::get('/reportes/ventas-ticket', [ReportController::class, 'ventasTicket'])->name('reportes.ventas.ticket');
+    Route::get('/reportes/ventas-productos', [ReportController::class, 'ventasProductos'])->name('reportes.ventas-productos');
+    Route::get('/reportes/ventas-pago', [ReportController::class, 'ventasPago'])->name('reportes.ventas-pago');
+    Route::get('/reportes/ventas-ticket', [ReportController::class, 'ventasTicket'])->name('reportes.ventas-ticket');
     Route::get('/reportes/taller-productividad', [ReportController::class, 'productividad'])->name('reportes.taller.productividad');
     Route::get('/reportes/taller-cotizaciones', [ReportController::class, 'cotizaciones'])->name('reportes.taller.cotizaciones');
-    Route::get('/reportes/taller-dispositivos', [ReportController::class, 'dispositivos'])->name('reportes.taller.dispositivos');
-    Route::get('/reportes/taller-sla', [ReportController::class, 'sla'])->name('reportes.taller.sla');
-    Route::get('/reportes/taller-ciclo-vida', [ReportController::class, 'cicloVida'])->name('reportes.taller.ciclo-vida');
+    Route::get('/reportes/taller-dispositivos', [ReportController::class, 'dispositivos'])->name('reportes.dispositivos');
+    Route::get('/reportes/taller-sla', [ReportController::class, 'sla'])->name('reportes.sla');
+    Route::get('/reportes/taller-ciclo-vida', [ReportController::class, 'cicloVida'])->name('reportes.ciclo-vida');
     Route::get('/reportes/inventario-valorizacion', [ReportController::class, 'valorizacionStock'])->name('reportes.inventario.valorizacion');
-    Route::get('/reportes/inventario-rotacion', [ReportController::class, 'rotacionInventario'])->name('reportes.inventario.rotacion');
-    Route::get('/reportes/inventario-kardex', [ReportController::class, 'kardex'])->name('reportes.inventario.kardex');
+    Route::get('/reportes/inventario-rotacion', [ReportController::class, 'rotacionInventario'])->name('reportes.rotacion');
+    Route::get('/reportes/inventario-kardex', [ReportController::class, 'kardex'])->name('reportes.kardex');
     Route::get('/reportes/caja-cuadre', [ReportController::class, 'cuadreCaja'])->name('reportes.caja.cuadre');
-    Route::get('/reportes/caja-flujo', [ReportController::class, 'flujoEfectivo'])->name('reportes.caja.flujo');
-    Route::get('/reportes/clientes-retencion', [ReportController::class, 'retencionClientes'])->name('reportes.clientes.retencion');
-    Route::get('/reportes/clientes-top', [ReportController::class, 'topClientes'])->name('reportes.clientes.top');
+    Route::get('/reportes/caja-flujo', [ReportController::class, 'flujoEfectivo'])->name('reportes.flujo-efectivo');
+    Route::get('/reportes/clientes-retencion', [ReportController::class, 'retencionClientes'])->name('reportes.retencion-clientes');
+    Route::get('/reportes/clientes-top', [ReportController::class, 'topClientes'])->name('reportes.top-clientes');
     Route::get('/reportes/cotizaciones-aprobacion', [ReportController::class, 'aprobacionCotizaciones'])->name('reportes.cotizaciones.aprobacion');
     // SuperAdmin-only reports
     Route::get('/reportes/saas-mrr', [ReportController::class, 'saasMrr'])->name('reportes.saas.mrr');

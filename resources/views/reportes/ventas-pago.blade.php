@@ -32,7 +32,7 @@
         ])
         @include('reportes.partials.kpi-card', [
             'label' => '% Efectivo',
-            'value' => App\Helpers\ReportHelper::porcentaje($pctEfectivo),
+            'value' => number_format($pctEfectivo, 1) . '%',
             'color' => 'indigo',
         ])
     </div>
@@ -62,7 +62,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $method->method }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ $method->count }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ App\Helpers\ReportHelper::formatMoney($method->total) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ App\Helpers\ReportHelper::porcentaje($method->percentage) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ number_format($method->percentage, 1) }}%</td>
                         </tr>
                         @empty
                         <tr>

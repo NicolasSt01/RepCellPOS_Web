@@ -32,7 +32,7 @@
         ])
         @include('reportes.partials.kpi-card', [
             'label' => '% Devuelto',
-            'value' => App\Helpers\ReportHelper::porcentaje($pctDevuelto),
+            'value' => number_format($pctDevuelto, 1) . '%',
             'color' => 'yellow',
         ])
     </div>

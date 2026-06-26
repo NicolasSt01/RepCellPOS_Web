@@ -25,4 +25,9 @@ class Client extends Model
     {
         return $this->hasMany(WorkOrder::class);
     }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
+    }
 }

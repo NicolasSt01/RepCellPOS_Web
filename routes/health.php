@@ -219,6 +219,43 @@ Route::get('/__e2e/create-sale', function (\Illuminate\Http\Request $request) {
     return response()->json(['status' => 'sale_created', 'expected_cash' => $register->getExpectedCash()]);
 });
 
+Route::get('/__e2e/create-work-order', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    if (!$email) {
+        return response()->json(['error' => 'Email parameter required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'User or tenant not found'], 404);
+    }
+    $tenant = $user->tenant;
+    $client = \App\Models\Client::where('tenant_id', $tenant->id)->first();
+    if (!$client) {
+        return response()->json(['error' => 'No client found, create clients first'], 400);
+    }
+
+    $wo = \App\Models\WorkOrder::create([
+        'tenant_id' => $tenant->id,
+        'client_id' => $client->id,
+        'user_id' => $user->id,
+        'device_brand' => $request->query('brand', 'Samsung'),
+        'device_model' => $request->query('model', 'Galaxy S24'),
+        'device_serial' => 'SN-E2E-' . uniqid(),
+        'problem_description' => $request->query('problem', 'Test problem'),
+        'status' => 'recibida',
+        'priority' => 'media',
+        'work_order_number' => $tenant->work_order_prefix . ($tenant->work_order_sequence + 1),
+    ]);
+
+    $tenant->increment('work_order_sequence');
+
+    if ($request->has('assigned_to')) {
+        $wo->update(['assigned_to' => $request->query('assigned_to')]);
+    }
+
+    return response()->json(['status' => 'work_order_created', 'id' => $wo->id, 'number' => $wo->work_order_number]);
+});
+
 Route::get('/__e2e/set-work-order-status', function (\Illuminate\Http\Request $request) {
     $id = $request->query('id');
     $status = $request->query('status');
@@ -231,6 +268,22 @@ Route::get('/__e2e/set-work-order-status', function (\Illuminate\Http\Request $r
     }
     $workOrder->update(['status' => $status]);
     return response()->json(['status' => 'ok', 'new_status' => $status]);
+});
+
+Route::get('/__e2e/create-superadmin', function () {
+    $user = \App\Models\User::where('email', 'superadmin@repcellpos.com')->first();
+    if ($user) {
+        return response()->json(['status' => 'already_exists', 'email' => $user->email]);
+    }
+    $user = \App\Models\User::create([
+        'name' => 'Super Admin',
+        'email' => 'superadmin@repcellpos.com',
+        'password' => \Illuminate\Support\Facades\Hash::make('password'),
+        'is_superadmin' => true,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+    return response()->json(['status' => 'superadmin_created', 'email' => $user->email]);
 });
 
 Route::get('/__e2e/simulate-pickup-reminder', function (\Illuminate\Http\Request $request) {

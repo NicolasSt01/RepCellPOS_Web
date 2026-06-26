@@ -54,6 +54,16 @@ class ReportController extends Controller
         return redirect()->route('reportes.index');
     }
 
+    private function checkReportAccess(Request $request, string $feature): void
+    {
+        $user = $request->user();
+        if ($user->isSuperAdmin()) return;
+        $tenant = $user->tenant;
+        if (!$tenant->hasFeature($feature)) {
+            abort(403, 'Tu plan no incluye este reporte.');
+        }
+    }
+
     private function getDateRange(Request $request)
     {
         $dateFrom = $request->input('date_from', now()->startOfMonth()->format('Y-m-d'));
@@ -75,6 +85,7 @@ class ReportController extends Controller
 
     public function ventasPeriodo(Request $request)
     {
+        $this->checkReportAccess($request, 'report.ventas-periodo');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -112,6 +123,7 @@ class ReportController extends Controller
 
     public function productividad(Request $request)
     {
+        $this->checkReportAccess($request, 'report.taller-productividad');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -152,6 +164,7 @@ class ReportController extends Controller
 
     public function cotizaciones(Request $request)
     {
+        $this->checkReportAccess($request, 'report.taller-cotizaciones');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -175,6 +188,7 @@ class ReportController extends Controller
 
     public function valorizacionStock(Request $request)
     {
+        $this->checkReportAccess($request, 'report.inventario-valorizacion');
         $tenantId = $request->user()->tenant_id;
 
         $products = Product::where('tenant_id', $tenantId)
@@ -196,19 +210,19 @@ class ReportController extends Controller
 
     public function cuadreCaja(Request $request)
     {
+        $this->checkReportAccess($request, 'report.caja-cuadre');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
         $registros = CashRegister::where('tenant_id', $tenantId)
             ->whereBetween('opened_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
-            ->with('user', 'sales', 'movements', 'incidents')
+            ->with('user', 'sales', 'movements')
             ->get()
             ->map(function ($reg) {
                 $totalVentas = $reg->sales->sum('total');
                 $totalMovements = $reg->movements->sum('amount');
                 $reg->expected_amount = $reg->opening_amount + $totalVentas - $totalMovements;
                 $reg->difference = $reg->closing_amount ? $reg->closing_amount - $reg->expected_amount : 0;
-                $reg->incidents_count = $reg->incidents->count();
                 return $reg;
             });
 
@@ -224,6 +238,7 @@ class ReportController extends Controller
 
     public function aprobacionCotizaciones(Request $request)
     {
+        $this->checkReportAccess($request, 'report.cotizaciones-aprobacion');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -256,11 +271,12 @@ class ReportController extends Controller
 
     public function ventasProductos(Request $request)
     {
+        $this->checkReportAccess($request, 'report.ventas-productos');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
         $topProducts = SaleItem::where('sale_items.tenant_id', $tenantId)
-            ->where('type', 'producto')
+            ->where('sale_items.type', 'producto')
             ->whereHas('sale', function ($q) use ($dateFrom, $dateTo) {
                 $q->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
             })
@@ -282,20 +298,20 @@ class ReportController extends Controller
         });
 
         $totalProductosVendidos = SaleItem::where('sale_items.tenant_id', $tenantId)
-            ->where('type', 'producto')
+            ->where('sale_items.type', 'producto')
             ->whereHas('sale', function ($q) use ($dateFrom, $dateTo) {
                 $q->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
             })
             ->sum('quantity');
         $productosUnicos = SaleItem::where('sale_items.tenant_id', $tenantId)
-            ->where('type', 'producto')
+            ->where('sale_items.type', 'producto')
             ->whereHas('sale', function ($q) use ($dateFrom, $dateTo) {
                 $q->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
             })
             ->distinct('product_id')->count('product_id');
 
         $categories = SaleItem::where('sale_items.tenant_id', $tenantId)
-            ->where('type', 'producto')
+            ->where('sale_items.type', 'producto')
             ->whereHas('sale', function ($q) use ($dateFrom, $dateTo) {
                 $q->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
             })
@@ -320,6 +336,7 @@ class ReportController extends Controller
 
     public function ventasPago(Request $request)
     {
+        $this->checkReportAccess($request, 'report.ventas-pago');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -354,6 +371,7 @@ class ReportController extends Controller
 
     public function ventasTicket(Request $request)
     {
+        $this->checkReportAccess($request, 'report.ventas-ticket');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -399,6 +417,7 @@ class ReportController extends Controller
 
     public function dispositivos(Request $request)
     {
+        $this->checkReportAccess($request, 'report.taller-dispositivos');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -437,6 +456,7 @@ class ReportController extends Controller
 
     public function kardex(Request $request)
     {
+        $this->checkReportAccess($request, 'report.inventario-kardex');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -466,6 +486,7 @@ class ReportController extends Controller
 
     public function flujoEfectivo(Request $request)
     {
+        $this->checkReportAccess($request, 'report.caja-flujo');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -510,6 +531,7 @@ class ReportController extends Controller
 
     public function topClientes(Request $request)
     {
+        $this->checkReportAccess($request, 'report.clientes-top');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -555,6 +577,7 @@ class ReportController extends Controller
 
     public function sla(Request $request)
     {
+        $this->checkReportAccess($request, 'report.taller-sla');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -586,6 +609,7 @@ class ReportController extends Controller
 
     public function cicloVida(Request $request)
     {
+        $this->checkReportAccess($request, 'report.taller-ciclo-vida');
         $hasData = false;
         $avgTotal = 0;
         $avgReparacion = 0;
@@ -610,6 +634,7 @@ class ReportController extends Controller
 
     public function rotacionInventario(Request $request)
     {
+        $this->checkReportAccess($request, 'report.inventario-rotacion');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -652,6 +677,7 @@ class ReportController extends Controller
 
     public function retencionClientes(Request $request)
     {
+        $this->checkReportAccess($request, 'report.clientes-retencion');
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
@@ -699,6 +725,7 @@ class ReportController extends Controller
 
     public function saasMrr(Request $request)
     {
+        $this->checkReportAccess($request, 'report.saas-mrr');
         $subscriptions = TenantSubscription::with('plan', 'tenant')
             ->where('status', 'activa')
             ->get();
@@ -742,6 +769,7 @@ class ReportController extends Controller
 
     public function saasCrecimiento(Request $request)
     {
+        $this->checkReportAccess($request, 'report.saas-crecimiento');
         $activeTenants = Tenant::where('is_active', true)->count();
         $newTenants = Tenant::where('created_at', '>=', now()->startOfMonth())->count();
         $cancelledTenants = Tenant::where('is_active', false)->where('updated_at', '>=', now()->startOfMonth())->count();
@@ -786,6 +814,7 @@ class ReportController extends Controller
 
     public function saasUso(Request $request)
     {
+        $this->checkReportAccess($request, 'report.saas-uso');
         $tenants = Tenant::withCount('users')
             ->with('plan')
             ->get()

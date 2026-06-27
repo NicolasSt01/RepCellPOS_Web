@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NewTenantNotification;
+use App\Mail\VerifyEmail;
 use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
@@ -10,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -52,6 +55,21 @@ class TenantController extends Controller
             ]);
 
             $user->assignRole('admin_tenant');
+
+            try {
+                Mail::to($user->email)->send(new VerifyEmail($user, $tenant));
+            } catch (\Throwable $e) {
+                logger()->error('Error al enviar correo de verificación', ['error' => $e->getMessage(), 'user' => $user->id]);
+            }
+
+            try {
+                $superadmins = User::where('is_superadmin', true)->get();
+                foreach ($superadmins as $superadmin) {
+                    Mail::to($superadmin->email)->send(new NewTenantNotification($tenant, $user));
+                }
+            } catch (\Throwable $e) {
+                logger()->error('Error enviando notificación a superadmin', ['error' => $e->getMessage(), 'tenant' => $tenant->id]);
+            }
 
             Auth::login($user);
 

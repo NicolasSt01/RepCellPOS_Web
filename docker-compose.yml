@@ -69,8 +69,8 @@ services:
       R2_BUCKET: ${R2_BUCKET}
       R2_ENDPOINT: ${R2_ENDPOINT}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL}
-    ports:
-      - "2527:80"
+    expose:
+      - "80"
     depends_on:
       mysql:
         condition: service_healthy

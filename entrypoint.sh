@@ -3,9 +3,8 @@ set -e
 
 cd /var/www/html
 
-# Generate .env from environment variables if not exists
-if [ ! -f .env ]; then
-    cat > .env << EOF
+# Always regenerate .env from environment variables on every start
+cat > .env << EOF
 APP_NAME=${APP_NAME:-RepCellPOS}
 APP_ENV=${APP_ENV:-production}
 APP_KEY=${APP_KEY}
@@ -40,13 +39,25 @@ REDIS_HOST=${REDIS_HOST:-redis}
 REDIS_PORT=${REDIS_PORT:-6379}
 REDIS_PASSWORD=${REDIS_PASSWORD:-null}
 MAIL_MAILER=${MAIL_MAILER:-log}
+MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+MAIL_PORT=${MAIL_PORT:-587}
+MAIL_USERNAME=${MAIL_USERNAME}
+MAIL_PASSWORD=${MAIL_PASSWORD}
+MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-noreply@repcellpos.nexacore.com.mx}
+MAIL_FROM_NAME="${MAIL_FROM_NAME:-RepCellPOS}"
+MAIL_ENCRYPTION=${MAIL_ENCRYPTION:-tls}
 R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
 R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
 R2_BUCKET=${R2_BUCKET}
 R2_ENDPOINT=${R2_ENDPOINT}
 R2_PUBLIC_URL=${R2_PUBLIC_URL}
 EOF
-fi
+
+# Clear all caches before rebuilding them
+php artisan config:clear 2>/dev/null || true
+php artisan route:clear 2>/dev/null || true
+php artisan view:clear 2>/dev/null || true
+php artisan cache:clear 2>/dev/null || true
 
 # Run migrations if DB is available
 if php artisan migrate --force 2>/dev/null; then
@@ -55,7 +66,7 @@ else
     echo "⚠️  Migrations skipped (DB not ready or already up to date)"
 fi
 
-# Cache config
+# Rebuild caches with fresh config
 php artisan config:cache 2>/dev/null || true
 php artisan route:cache 2>/dev/null || true
 php artisan view:cache 2>/dev/null || true

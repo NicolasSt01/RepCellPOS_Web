@@ -46,14 +46,6 @@
             @foreach($areaReports as $report)
             @php
                 $routeExists = Route::has($report['route']);
-                $phase = $report['phase'] ?? 1;
-                $phaseLabels = [
-                    1 => ['label' => 'Fase 1', 'class' => 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'],
-                    2 => ['label' => 'Fase 2', 'class' => 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'],
-                    3 => ['label' => 'Fase 3', 'class' => 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'],
-                    4 => ['label' => 'Fase 4', 'class' => 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'],
-                ];
-                $phaseInfo = $phaseLabels[$phase] ?? $phaseLabels[1];
             @endphp
             <a href="{{ $routeExists ? route($report['route']) : '#' }}"
                 class="group relative flex flex-col rounded-xl border border-gray-200 dark:border-gray-600 p-4 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all duration-200 {{ $routeExists ? 'cursor-pointer' : 'cursor-default opacity-60' }}">
@@ -61,9 +53,6 @@
                     <div class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 transition-colors">
                         {!! $iconMap[$report['icon']] ?? $iconMap['chart-bar'] !!}
                     </div>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $phaseInfo['class'] }}">
-                        {{ $phaseInfo['label'] }}
-                    </span>
                 </div>
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">{{ $report['name'] }}</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex-1">{{ $report['description'] }}</p>

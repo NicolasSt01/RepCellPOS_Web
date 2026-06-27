@@ -35,6 +35,7 @@ class TenantController extends Controller
                 'name' => $validated['business_name'],
                 'slug' => Str::slug($validated['business_name']) . '-' . Str::random(4),
                 'phone' => $validated['business_phone'],
+                'email' => $validated['admin_email'],
                 'is_active' => true,
                 'plan_id' => Plan::where('slug', 'premium')->first()->id,
                 'trial_ends_at' => now()->addDays(7),

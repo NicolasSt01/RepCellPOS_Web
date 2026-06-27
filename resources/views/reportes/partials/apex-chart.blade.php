@@ -3,7 +3,9 @@
     'height' => 300,
 ])
 
-<div id="{{ $chartId }}"></div>
+<div class="relative overflow-hidden" style="min-height: {{ $height }}px">
+    <div id="{{ $chartId }}"></div>
+</div>
 
 @push('scripts')
 <script>

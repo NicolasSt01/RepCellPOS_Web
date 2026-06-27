@@ -38,7 +38,7 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6">
+        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6 relative overflow-hidden">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Distribución por Tipo</h2>
             <div id="typeChart"></div>
         </div>
@@ -115,7 +115,7 @@
             responsive: [{
                 breakpoint: 480,
                 options: {
-                    chart: { width: 300 },
+                    chart: { width: '100%' },
                     legend: { position: 'bottom' }
                 }
             }],

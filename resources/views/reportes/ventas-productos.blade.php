@@ -33,11 +33,11 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6">
+        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6 relative overflow-hidden">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Top 10 Productos por Ingresos</h2>
             <div id="productChart"></div>
         </div>
-        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6">
+        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6 relative overflow-hidden">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Ventas por Categoría</h2>
             <div id="categoryChart"></div>
         </div>
@@ -90,7 +90,7 @@
         new ApexCharts(document.querySelector('#productChart'), {
             chart: {
                 type: 'bar',
-                height: 350,
+                height: 400,
                 toolbar: { show: false },
                 foreColor: isDark ? '#cbd5e1' : '#6b7280',
             },
@@ -100,7 +100,7 @@
             }],
             xaxis: {
                 categories: {!! $productLabels !!},
-                labels: { rotate: -45, style: { fontSize: '11px' } }
+                labels: { style: { fontSize: '11px' } }
             },
             yaxis: {
                 labels: {
@@ -111,7 +111,7 @@
             plotOptions: {
                 bar: {
                     borderRadius: 4,
-                    horizontal: false,
+                    horizontal: true,
                 }
             },
             colors: ['#6366f1'],
@@ -134,7 +134,7 @@
             responsive: [{
                 breakpoint: 480,
                 options: {
-                    chart: { width: 300 },
+                    chart: { width: '100%' },
                     legend: { position: 'bottom' }
                 }
             }],

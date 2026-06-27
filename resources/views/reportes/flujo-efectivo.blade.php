@@ -37,7 +37,7 @@
         ])
     </div>
 
-    <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6">
+    <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6 relative overflow-hidden">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Evolución Diaria</h2>
         <div id="flowChart"></div>
     </div>

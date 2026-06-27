@@ -38,7 +38,7 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6">
+        <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg p-6 relative overflow-hidden">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Top Marcas</h2>
             <div id="brandChart"></div>
         </div>
@@ -88,7 +88,7 @@
         new ApexCharts(document.querySelector('#brandChart'), {
             chart: {
                 type: 'bar',
-                height: 350,
+                height: 400,
                 toolbar: { show: false },
                 foreColor: isDark ? '#cbd5e1' : '#6b7280',
             },
@@ -98,13 +98,13 @@
             }],
             xaxis: {
                 categories: {!! $brandLabels !!},
-                labels: { rotate: -45, style: { fontSize: '11px' } }
+                labels: { style: { fontSize: '11px' } }
             },
             theme: { mode: isDark ? 'dark' : 'light' },
             plotOptions: {
                 bar: {
                     borderRadius: 4,
-                    horizontal: false,
+                    horizontal: true,
                 }
             },
             colors: ['#6366f1'],

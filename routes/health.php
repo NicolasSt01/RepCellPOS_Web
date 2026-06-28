@@ -56,6 +56,18 @@ Route::get('/__e2e/verify-email', function (\Illuminate\Http\Request $request) {
     return response()->json(['status' => 'email_verified', 'email' => $user->email]);
 });
 
+Route::get('/__e2e/get-verification-token', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    if (!$email) {
+        return response()->json(['error' => 'Email parameter required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+    return response()->json(['token' => $user->email_verification_token]);
+});
+
 Route::get('/__e2e/expire-email-verification', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     if (!$email) {

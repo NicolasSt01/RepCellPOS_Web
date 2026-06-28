@@ -59,7 +59,7 @@ class TenantController extends Controller
             try {
                 Mail::to($user->email)->send(new VerifyEmail($user, $tenant));
             } catch (\Throwable $e) {
-                logger()->error('Error al enviar correo de verificación', ['error' => $e->getMessage(), 'user' => $user->id]);
+                logger()->error('Error al encolar correo de verificación', ['error' => $e->getMessage(), 'user' => $user->id]);
             }
 
             try {
@@ -68,7 +68,7 @@ class TenantController extends Controller
                     Mail::to($superadmin->email)->send(new NewTenantNotification($tenant, $user));
                 }
             } catch (\Throwable $e) {
-                logger()->error('Error enviando notificación a superadmin', ['error' => $e->getMessage(), 'tenant' => $tenant->id]);
+                logger()->error('Error encolando notificación a superadmin', ['error' => $e->getMessage(), 'tenant' => $tenant->id]);
             }
 
             Auth::login($user);

@@ -116,6 +116,12 @@
                                 <div>
                                     <h4 class="text-sm font-bold text-indigo-900 dark:text-indigo-200" x-text="selectedClient?.name"></h4>
                                     <p class="text-sm text-indigo-700 dark:text-indigo-300" x-text="selectedClient?.phone"></p>
+                                    <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                                        <span x-show="selectedClient?.notification_preference === 'email'">📧 Correo</span>
+                                        <span x-show="selectedClient?.notification_preference === 'whatsapp'">💬 WhatsApp</span>
+                                        <span x-show="selectedClient?.notification_preference === 'call'">📞 Llamada</span>
+                                        <span x-text="selectedClient?.email ? '· ' + selectedClient.email : ''"></span>
+                                    </p>
                                 </div>
                                 <button type="button" @click="selectedClient = null" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-sm font-medium">
                                     Cambiar
@@ -140,7 +146,9 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notificación por Defecto <span class="text-red-500">*</span></label>
                                 <select x-model="newClient.notification_preference" class="block w-full rounded-md border-0 py-2 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                                    @if(Auth::user()->tenant->hasFeature('notifications_whatsapp'))
                                     <option value="whatsapp">WhatsApp</option>
+                                    @endif
                                     <option value="email">Correo Electrónico</option>
                                     <option value="call">Llamada Telefónica</option>
                                 </select>

@@ -164,6 +164,44 @@
         </div>
     </div>
 
+    <!-- Low Stock Alert -->
+    @if($lowStockProducts->isNotEmpty())
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-red-200 dark:border-red-900/50 p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="flex-shrink-0 p-2 bg-red-50 dark:bg-red-900/30 rounded-md text-red-600 dark:text-red-400">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Productos con Stock Bajo</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-900/50">
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Producto</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Stock Actual</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Stock Mínimo</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    @foreach($lowStockProducts as $product)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-900/25">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ $product->name }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-red-600 dark:text-red-400">{{ $product->stock }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $product->min_stock }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{{ route('products.edit', $product) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">Reabastecer</a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
     <!-- Charts Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Chart 1: Order Status Distribution -->

@@ -44,7 +44,15 @@ class NotificationService
 
     protected function dispatch(Notification $notification, Client $client, WorkOrder $workOrder, array $metadata = []): void
     {
-        match ($client->notification_preference) {
+        $channel = $client->notification_preference;
+
+        // Si el tenant no tiene WhatsApp, forzar a email (si tiene email) o call
+        if ($channel === 'whatsapp' && !$workOrder->tenant->hasFeature('notifications_whatsapp')) {
+            $channel = $client->email ? 'email' : 'call';
+            $notification->update(['channel' => $channel]);
+        }
+
+        match ($channel) {
             'email' => $this->sendEmail($notification, $client, $workOrder, $metadata),
             'whatsapp' => $this->sendWhatsapp($notification, $client, $workOrder),
             'call' => $notification->markAsLogged(),

@@ -7,6 +7,7 @@ return [
         'pos' => 'Punto de Venta (POS)',
         'notifications_email' => 'Notificaciones Email',
         'notifications_whatsapp' => 'Notificaciones WhatsApp',
+        'notifications_low_stock' => 'Alertas de Stock Bajo',
         'reports_advanced' => 'Reportes Avanzados',
 
         // Reportes individuales (identificadores para bloqueo por plan)

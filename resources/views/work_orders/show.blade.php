@@ -41,7 +41,16 @@
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Notificación</dt>
-                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ ucfirst($workOrder->client->notification_preference) }}</dd>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                                @php $pref = $workOrder->client->notification_preference; @endphp
+                                @if($pref === 'email')
+                                    📧 Correo
+                                @elseif($pref === 'whatsapp')
+                                    💬 WhatsApp
+                                @elseif($pref === 'call')
+                                    📞 Llamada telefónica
+                                @endif
+                            </dd>
                         </div>
                     </dl>
                 </div>

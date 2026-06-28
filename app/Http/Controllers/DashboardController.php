@@ -6,6 +6,8 @@ use App\Models\Client;
 use App\Models\WorkOrder;
 use App\Models\Sale;
 use App\Models\Product;
+use App\Models\Tenant;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -42,6 +44,19 @@ class DashboardController extends Controller
             ->latest()
             ->take(5)
             ->get();
+
+        // Productos con stock bajo mínimo
+        $tenant = Auth::user()->tenant;
+        $lowStockProducts = collect();
+        if ($tenant && $tenant->hasFeature('notifications_low_stock')) {
+            $lowStockProducts = Product::where('type', 'producto')
+                ->where('is_active', true)
+                ->whereColumn('stock', '<=', 'min_stock')
+                ->where('min_stock', '>', 0)
+                ->orderBy('stock')
+                ->take(10)
+                ->get();
+        }
 
         // Distribución de órdenes por estado
         $ordersByStatus = WorkOrder::selectRaw('status, count(*) as count')
@@ -96,7 +111,8 @@ class DashboardController extends Controller
             'technicianWorkload',
             'recentOrders',
             'orderStatusChartData',
-            'weeklySalesData'
+            'weeklySalesData',
+            'lowStockProducts'
         ));
     }
 }

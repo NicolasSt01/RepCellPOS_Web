@@ -205,6 +205,7 @@
                                         @case('pos') Punto de Venta (POS) @break
                                         @case('notifications_email') Notificaciones Email @break
                                         @case('notifications_whatsapp') Notificaciones WhatsApp @break
+                                        @case('notifications_low_stock') Alertas de Stock Bajo @break
                                         @case('reports_advanced') Reportes Avanzados @break
                                         @default {{ $feature }} @break
                                     @endswitch

@@ -77,7 +77,7 @@ class WorkOrderController extends Controller
         $clients = Client::where(function ($q) use ($query) {
             $q->where('name', 'like', "%{$query}%")
               ->orWhere('phone', 'like', "%{$query}%");
-        })->orderBy('name')->limit(10)->get(['id', 'name', 'phone', 'email']);
+        })->orderBy('name')->limit(10)->get(['id', 'name', 'phone', 'email', 'notification_preference']);
 
         return response()->json($clients);
     }

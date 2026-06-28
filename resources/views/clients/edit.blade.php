@@ -38,7 +38,9 @@
                     <label for="notification_preference" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Preferencia de notificación <span class="text-red-500">*</span></label>
                     <select name="notification_preference" id="notification_preference" required
                         class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                        @if(Auth::user()->tenant->hasFeature('notifications_whatsapp'))
                         <option value="whatsapp" {{ old('notification_preference', $client->notification_preference) === 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
+                        @endif
                         <option value="email" {{ old('notification_preference', $client->notification_preference) === 'email' ? 'selected' : '' }}>Correo electrónico</option>
                         <option value="call" {{ old('notification_preference', $client->notification_preference) === 'call' ? 'selected' : '' }}>Llamada telefónica</option>
                     </select>

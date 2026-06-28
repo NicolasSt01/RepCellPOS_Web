@@ -71,15 +71,13 @@ class NotificationService
 
         try {
             $tenant = $workOrder->tenant;
-            $isLogMailer = Config::get('mail.default') === 'log';
 
-            if (!$isLogMailer && (!$tenant->mail_host || !$tenant->mail_username || !$tenant->mail_password)) {
+            if ($tenant->mail_host && $tenant->mail_username && $tenant->mail_password) {
+                app(TenantMailService::class)->configureForTenant($tenant);
+                Config::set('mail.default', 'smtp');
+            } elseif (Config::get('mail.default') === 'log') {
                 $notification->markAsLogged('SMTP no configurado');
                 return;
-            }
-
-            if (!$isLogMailer) {
-                app(TenantMailService::class)->configureForTenant($tenant);
             }
 
             $mailable = match ($notification->event) {

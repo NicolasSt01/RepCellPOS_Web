@@ -357,9 +357,9 @@ class PosController extends Controller
         // Fallback a email
         if ($admin->email) {
             try {
-                $isLogMailer = \Illuminate\Support\Facades\Config::get('mail.default') === 'log';
-                if (!$isLogMailer && $tenant->mail_host && $tenant->mail_username && $tenant->mail_password) {
+                if ($tenant->mail_host && $tenant->mail_username && $tenant->mail_password) {
                     app(TenantMailService::class)->configureForTenant($tenant);
+                    \Illuminate\Support\Facades\Config::set('mail.default', 'smtp');
                 }
                 Mail::to($admin->email)->send(new LowStockAlert($lowStockProducts, $tenant, $admin));
                 Log::info("Low stock email sent to admin {$admin->id} ({$admin->email}) for {$lowStockProducts->count()} products");

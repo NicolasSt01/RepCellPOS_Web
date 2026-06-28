@@ -99,6 +99,7 @@ class CashRegisterController extends Controller
             try {
                 if ($tenant->mail_host && $tenant->mail_username && $tenant->mail_password) {
                     app(TenantMailService::class)->configureForTenant($tenant);
+                    \Illuminate\Support\Facades\Config::set('mail.default', 'smtp');
                     $admin = $tenant->users()->role('admin_tenant')->first();
                     if ($admin) {
                         Mail::to($admin->email)->send(new CashRegisterMismatch($cashRegister, $incident, $tenant));

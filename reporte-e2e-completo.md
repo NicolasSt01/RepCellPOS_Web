@@ -2,19 +2,19 @@
 
 **Fecha:** 2026-06-28  
 **URL:** `https://repcellpos.nexacore.com.mx`  
-**Tests:** 6 Playwright tests, 2 workers, `--headed`, timeout 300s
+**Tests:** 5 Playwright tests, 2 workers, `--headed`, timeout 300s
 
 ---
 
-## Resultados: ✅ 6/6 pruebas pasaron (31.0s)
+## Resultados: ✅ 5/5 pruebas pasaron (31.1s)
 
 | # | Suite | Prueba | Estado | Tiempo |
 |---|---|---|---|---|
-| 1 | Registro | Registro completo: landing → formulario → dashboard | ✅ | 10.5s |
-| 2 | Registro | Error con email duplicado | ✅ | 2.6s |
-| 3 | Registro | Error si contraseñas no coinciden | ✅ | 2.8s |
-| 4 | Registro | Verificación de email y envíos de correo sin errores | ✅ | 9.8s |
-| 5 | POS + OT + Tracking | Alta de productos, venta POS, orden de trabajo y tracking | ✅ | 26.5s |
+| 1 | Registro | Registro completo: landing → formulario → dashboard | ✅ | 11.6s |
+| 2 | Registro | Error con email duplicado | ✅ | 2.8s |
+| 3 | Registro | Error si contraseñas no coinciden | ✅ | 2.6s |
+| 4 | Registro | Verificación de email y envíos de correo sin errores | ✅ | 6.2s |
+| 5 | POS + OT + Tracking | Alta de productos, venta POS, orden de trabajo y tracking | ✅ | 25.0s |
 
 ---
 
@@ -92,10 +92,44 @@
 
 ---
 
-## Archivos creados/modificados
+## 3. Nuevas funcionalidades implementadas
+
+### 3.1 WhatsApp deshabilitado según plan
+- En creación/edición de clientes: opción WhatsApp solo aparece si el plan tiene `notifications_whatsapp`
+- En creación de OT: misma lógica en el formulario de nuevo cliente
+- `NotificationService.dispatch()` detecta si el cliente tiene WhatsApp pero el plan no lo permite, y hace fallback a email o llamada
+- Planes: Básico (❌), Pro (❌), Premium (✅)
+
+### 3.2 Alertas de stock bajo en dashboard
+- Nuevo feature `notifications_low_stock` en todos los planes (true)
+- Dashboard muestra tabla con productos donde `stock <= min_stock` y `min_stock > 0`
+- Incluye enlace directo a editar producto para reabastecer
+- Feature configurable por plan en superadmin
+
+### 3.3 Preferencia de notificación del cliente visible en OT
+- Al seleccionar cliente existente en creación de OT → se muestra 📧/💬/📞 con email
+- En detalle de OT (`work_orders/show`) → badge visual con icono del canal
+- Backend devuelve `notification_preference` en búsqueda de clientes
+
+---
+
+## Archivos creados/modificados (nueva ronda)
 
 | Archivo | Cambio |
 |---|---|
+| `database/seeders/PlansSeeder.php` | **Modificado** — Nuevo feature `notifications_low_stock` en todos los planes |
+| `config/plans.php` | **Modificado** — Nueva feature `notifications_low_stock` en definiciones |
+| `app/Services/NotificationService.php` | **Modificado** — Fallback automático si WhatsApp no está habilitado |
+| `app/Http/Controllers/DashboardController.php` | **Modificado** — Query de productos con stock bajo |
+| `app/Http/Controllers/WorkOrderController.php` | **Modificado** — Incluye `notification_preference` en búsqueda de clientes |
+| `resources/views/dashboard.blade.php` | **Modificado** — Nueva sección "Productos con Stock Bajo" |
+| `resources/views/clients/create.blade.php` | **Modificado** — WhatsApp condicional según plan |
+| `resources/views/clients/edit.blade.php` | **Modificado** — WhatsApp condicional según plan |
+| `resources/views/work_orders/create.blade.php` | **Modificado** — WhatsApp condicional + preferencia cliente visible |
+| `resources/views/work_orders/show.blade.php` | **Modificado** — Badge visual del canal de notificación |
+| `resources/views/landing.blade.php` | **Modificado** — Nuevo feature listado en planes |
+| `resources/views/subscription/upgrade.blade.php` | **Modificado** — Nuevo feature listado en upgrade |
+| `routes/health.php` | **Modificado** — Nueva ruta `__e2e/seed-plans` para actualizar planes existentes |
 | `app/Mail/VerifyEmail.php` | **Nuevo** — Mailable para verificación de correo |
 | `app/Mail/NewTenantNotification.php` | **Nuevo** — Mailable para notificar a superadmin |
 | `resources/views/emails/auth/verify-email.blade.php` | **Nuevo** — Template HTML del correo de verificación |

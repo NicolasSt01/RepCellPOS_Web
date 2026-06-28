@@ -9,11 +9,15 @@ use App\Models\Sale;
 use App\Models\TenantClause;
 use App\Models\SaleItem;
 use App\Models\WorkOrder;
+use App\Mail\LowStockAlert;
+use App\Services\TenantMailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class PosController extends Controller
@@ -276,6 +280,9 @@ class PosController extends Controller
 
         $this->autoCancelAffectedQuotes($products);
 
+        // Notificar al admin si algún producto quedó con stock bajo
+        $this->notifyLowStock($validated, $tenant);
+
         return redirect()->route('pos.index')->with('success', "Venta #{$sale->id} registrada exitosamente. Total: $" . number_format($sale->total, 2));
     }
 
@@ -302,6 +309,62 @@ class PosController extends Controller
                         "Cotización cancelada automáticamente por falta de stock de \"{$product->name}\" tras una venta directa."
                     );
                 }
+            }
+        }
+    }
+
+    private function notifyLowStock(array $validated, \App\Models\Tenant $tenant): void
+    {
+        $soldProductIds = collect($validated['items'])
+            ->whereNotNull('product_id')
+            ->pluck('product_id')
+            ->unique();
+
+        if ($soldProductIds->isEmpty()) {
+            return;
+        }
+
+        $lowStockProducts = Product::whereIn('id', $soldProductIds)
+            ->where('type', 'producto')
+            ->whereColumn('stock', '<=', 'min_stock')
+            ->where('min_stock', '>', 0)
+            ->get();
+
+        if ($lowStockProducts->isEmpty()) {
+            return;
+        }
+
+        $admin = Auth::user();
+        $itemsList = $lowStockProducts->map(fn($p) => "- {$p->name}: {$p->stock}/{$p->min_stock}")->implode("\n");
+        $message = "⚠️ Stock Bajo en {$tenant->name}:\n{$itemsList}";
+
+        // WhatsApp primero si el plan lo permite
+        if ($tenant->hasFeature('notifications_whatsapp') && $tenant->whatsapp_webhook_url && $admin->phone) {
+            try {
+                Http::post($tenant->whatsapp_webhook_url, [
+                    'phone' => preg_replace('/[^0-9]/', '', $admin->phone),
+                    'message' => $message,
+                    'type' => 'low_stock_alert',
+                    'tenant_id' => $tenant->id,
+                ]);
+                Log::info("WhatsApp low stock alert sent to admin {$admin->id} for {$lowStockProducts->count()} products");
+                return;
+            } catch (\Exception $e) {
+                Log::warning("WhatsApp low stock alert failed, falling back to email: {$e->getMessage()}");
+            }
+        }
+
+        // Fallback a email
+        if ($admin->email) {
+            try {
+                $isLogMailer = \Illuminate\Support\Facades\Config::get('mail.default') === 'log';
+                if (!$isLogMailer && $tenant->mail_host && $tenant->mail_username && $tenant->mail_password) {
+                    app(TenantMailService::class)->configureForTenant($tenant);
+                }
+                Mail::to($admin->email)->send(new LowStockAlert($lowStockProducts, $tenant, $admin));
+                Log::info("Low stock email sent to admin {$admin->id} ({$admin->email}) for {$lowStockProducts->count()} products");
+            } catch (\Exception $e) {
+                Log::error("Error sending low stock alert email: {$e->getMessage()}");
             }
         }
     }

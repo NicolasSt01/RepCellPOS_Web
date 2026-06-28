@@ -7,6 +7,7 @@ use App\Mail\VerifyEmail;
 use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
+use Database\Seeders\NotificationTemplateSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,6 +56,8 @@ class TenantController extends Controller
             ]);
 
             $user->assignRole('admin_tenant');
+
+            app(NotificationTemplateSeeder::class)->seedForTenant($tenant->id);
 
             try {
                 Mail::to($user->email)->send(new VerifyEmail($user, $tenant));

@@ -348,34 +348,4 @@ class SettingsController extends Controller
         return redirect()->route('settings.index')->with('success', 'Configuración actualizada.');
     }
 
-    public function updateNotificationTemplate(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'event' => 'required|string',
-            'channel' => 'required|in:email,whatsapp',
-            'subject' => 'nullable|string|max:255',
-            'body' => 'required|string',
-            'is_active' => 'boolean',
-        ]);
-
-        $validated['is_active'] = $request->boolean('is_active');
-        $tenantId = Auth::user()->tenant_id;
-
-        NotificationTemplate::updateOrCreate(
-            [
-                'tenant_id' => $tenantId,
-                'event' => $validated['event'],
-                'channel' => $validated['channel'],
-            ],
-            [
-                'subject' => $validated['subject'],
-                'body' => $validated['body'],
-                'is_active' => $validated['is_active'],
-            ]
-        );
-
-        Log::info("Notification template updated: event={$validated['event']}, channel={$validated['channel']}");
-
-        return redirect()->route('settings.index')->with('success', 'Plantilla de notificación actualizada.');
-    }
 }

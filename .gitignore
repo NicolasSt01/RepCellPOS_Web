@@ -64,3 +64,5 @@ tester.json
 reporte-e2e-registro.md
 reporte-e2e-completo.md
 reporte-e2e-flujo.md
+IntegracionWhatsapp.md
+.env.example

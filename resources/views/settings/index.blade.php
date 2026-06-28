@@ -1,29 +1,31 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-5xl mx-auto space-y-8" x-data="settingsApp()">
+<div class="max-w-5xl mx-auto space-y-6" x-data="settingsApp()">
     <div class="text-center">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">⚙️ Configuración</h1>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Todo lo que necesitas para poner a punto tu taller</p>
     </div>
 
-    <div class="flex items-center justify-center gap-2 sm:gap-4">
-        <template x-for="(step, index) in steps" :key="index">
-            <div class="flex items-center">
-                <button @click="activeStep = index"
-                    :class="activeStep === index ? 'bg-indigo-600 text-white ring-4 ring-indigo-200 scale-110' : (index < activeStep ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400')"
-                    class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 hover:scale-105">
-                    <span class="flex items-center justify-center w-7 h-7 rounded-full text-xs font-black"
-                        :class="activeStep === index ? 'bg-white/20' : (index < activeStep ? 'bg-white/20' : 'bg-gray-300 dark:bg-gray-600')"
-                        x-text="index + 1"></span>
-                    <span class="hidden sm:inline" x-text="step"></span>
-                </button>
-                <template x-if="index < steps.length - 1">
-                    <div class="w-6 sm:w-12 h-0.5 mx-1"
-                        :class="index < activeStep ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'"></div>
-                </template>
-            </div>
-        </template>
+    <div class="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-2xl p-3 sm:p-4 overflow-x-auto">
+        <div class="flex items-center justify-center gap-0 sm:gap-1 min-w-max mx-auto">
+            <template x-for="(step, index) in steps" :key="index">
+                <div class="flex items-center">
+                    <button @click="activeStep = index"
+                        :class="activeStep === index ? 'bg-indigo-600 text-white ring-2 ring-indigo-200 scale-105 sm:scale-110' : (index < activeStep ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400')"
+                        class="flex items-center gap-1 sm:gap-2 rounded-full px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold transition-all duration-200 hover:scale-105">
+                        <span class="flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-xs font-black shrink-0"
+                            :class="activeStep === index ? 'bg-white/20' : (index < activeStep ? 'bg-white/20' : 'bg-gray-300 dark:bg-gray-600')"
+                            x-text="index + 1"></span>
+                        <span class="hidden sm:inline" x-text="step"></span>
+                    </button>
+                    <template x-if="index < steps.length - 1">
+                        <div class="w-3 sm:w-10 h-0.5 mx-0.5 sm:mx-1 shrink-0"
+                            :class="index < activeStep ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'"></div>
+                    </template>
+                </div>
+            </template>
+        </div>
     </div>
 
     <div class="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
@@ -500,19 +502,39 @@
         @endcan
     </div>
 
-        {{-- STEP 6: NOTIFICACIONES --}}
+        {{-- STEP 6: NOTIFICACIONES (solo lectura para el tenant) --}}
         @can('settings.company')
         <div x-show="activeStep === 5" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
-            <div class="p-6">
-                <div class="flex items-center gap-3 mb-6">
+            <div class="p-6 space-y-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">📱 Notificaciones por WhatsApp</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Conecta tu número y envía notificaciones automáticas a tus clientes</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('whatsapp.config') }}"
+                       class="inline-flex items-center rounded-md shrink-0 {{ $tenant->hasFeature('notifications_whatsapp') ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' }} px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors">
+                        {{ $tenant->hasFeature('notifications_whatsapp') ? 'Configurar WhatsApp' : 'Solo plan Premium' }}
+                    </a>
+                </div>
+
+                <hr class="border-gray-200 dark:border-gray-700">
+
+                <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">6</div>
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Plantillas de Notificación</h2>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Personaliza los mensajes que se envían a los clientes por correo o WhatsApp</p>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Plantillas de Notificación</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Mensajes predefinidos que se envían a los clientes vía WhatsApp.</p>
                     </div>
                 </div>
 
-                <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     @php
                         $events = [
                             'order_created' => 'Orden creada',
@@ -523,67 +545,38 @@
                             'repair_completed' => 'Reparación completada',
                             'ready_for_pickup' => 'Listo para recoger',
                         ];
-                        $channels = ['email' => 'Correo', 'whatsapp' => 'WhatsApp'];
-                        $placeholders = '{work_order_number}, {client_name}, {tracking_url}';
+                        $defaults = \Database\Seeders\NotificationTemplateSeeder::getDefaults();
                     @endphp
 
                     @foreach($events as $eventKey => $eventLabel)
-                        @foreach($channels as $channelKey => $channelLabel)
-                            @php
-                                $template = $templates->firstWhere(fn($t) => $t->event === $eventKey && $t->channel === $channelKey);
-                            @endphp
-                            <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-                                <div class="p-5">
-                                    <form method="POST" action="{{ route('settings.notifications.templates.update') }}" class="space-y-4">
-                                        @csrf
-                                        <input type="hidden" name="event" value="{{ $eventKey }}">
-                                        <input type="hidden" name="channel" value="{{ $channelKey }}">
-
-                                        <div class="flex items-center justify-between mb-2">
-                                            <div class="flex items-center gap-3">
-                                                <span class="inline-flex items-center rounded-md px-2.5 py-1 text-sm font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
-                                                    {{ $eventLabel }}
-                                                </span>
-                                                <span class="inline-flex items-center rounded-md px-2.5 py-1 text-sm font-medium {{ $channelKey === 'email' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' }}">
-                                                    {{ $channelLabel }}
-                                                </span>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <label class="text-sm text-gray-500 dark:text-gray-400">Activa</label>
-                                                <input type="hidden" name="is_active" value="0">
-                                                <input type="checkbox" name="is_active" value="1" {{ $template?->is_active ? 'checked' : '' }}
-                                                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-600 dark:bg-gray-700">
-                                            </div>
-                                        </div>
-
-                                        @if($channelKey === 'email')
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Asunto</label>
-                                            <input type="text" name="subject" value="{{ old('subject', $template?->subject ?? '') }}" placeholder="Ej: Tu orden {{ $eventLabel }}"
-                                                class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
-                                        </div>
-                                        @endif
-
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-                                                Mensaje
-                                                <span class="text-xs text-gray-400 ml-2">Placeholders: {{ $placeholders }}</span>
-                                            </label>
-                                            <textarea name="body" rows="3" required
-                                                placeholder="Ej: Hola {client_name}, tu orden {work_order_number} ha sido actualizada. {{ $trackingUrl ?? '' }}"
-                                                class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">{{ old('body', $template?->body ?? '') }}</textarea>
-                                        </div>
-
-                                        <div class="flex justify-end">
-                                            <button type="submit"
-                                                class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
-                                                💾 {{ $template ? 'Actualizar' : 'Crear' }}
-                                            </button>
-                                        </div>
-                                    </form>
+                        @php
+                            $template = $templates->firstWhere(fn($t) => $t->event === $eventKey && $t->channel === 'whatsapp');
+                            $raw = $template?->body ?? ($defaults[$eventKey]['whatsapp']['body'] ?? '');
+                            $preview = str_replace(
+                                ['{client_name}', '{work_order_number}', '{tracking_url}'],
+                                ['Juan Pérez', 'W001234', 'repcellpos.com/seguimiento/abc123'],
+                                $raw
+                            );
+                        @endphp
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
+                                    {{ $eventLabel }}
+                                </span>
+                                @if($template?->is_active)
+                                    <span class="text-xs text-green-600 dark:text-green-400 font-medium">● Activa</span>
+                                @endif
+                            </div>
+                            <div class="flex justify-end">
+                                <div class="bg-[#dcf8c6] dark:bg-gray-600 rounded-lg rounded-tr-sm px-4 py-3 max-w-xs shadow-sm">
+                                    <p class="text-sm text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-wrap">{{ $preview }}</p>
+                                    <div class="flex items-center justify-end gap-1 mt-1.5">
+                                        <span class="text-[10px] text-gray-500 dark:text-gray-400">12:34</span>
+                                        <svg class="w-3.5 h-3.5 text-green-500" viewBox="0 0 16 11" fill="currentColor"><path d="M11.071.653a.457.457 0 00-.304-.102.493.493 0 00-.381.178l-6.19 7.636-2.011-2.095a.463.463 0 00-.336-.153.454.454 0 00-.33.154.515.515 0 00-.136.348.482.482 0 00.144.342l2.358 2.455a.465.465 0 00.33.153.472.472 0 00.33-.153L11.2 1.346a.485.485 0 00.14-.347.5.5 0 00-.14-.346.607.607 0 00-.129.01zM8.77 7.3l-1.118 1.34c.353.186.745.298 1.162.298.648 0 1.236-.247 1.687-.648L8.77 7.3z"/></svg>
+                                    </div>
                                 </div>
                             </div>
-                        @endforeach
+                        </div>
                     @endforeach
                 </div>
 

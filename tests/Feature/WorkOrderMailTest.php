@@ -87,6 +87,7 @@ class WorkOrderMailTest extends TestCase
         $client = Client::factory()->create([
             'tenant_id' => $this->tenant->id,
             'notification_preference' => 'whatsapp',
+            'email' => null,
         ]);
 
         $this->post(route('work_orders.store'), [

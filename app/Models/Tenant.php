@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 
 class Tenant extends Model
 {
@@ -35,6 +36,7 @@ class Tenant extends Model
         'mail_from_address',
         'mail_from_name',
         'whatsapp_webhook_url',
+        'configuracion',
         'plan_id',
         'trial_ends_at',
         'subscription_status',
@@ -44,6 +46,7 @@ class Tenant extends Model
     {
         return [
             'social_media' => 'array',
+            'configuracion' => 'array',
             'tax_enabled' => 'boolean',
             'tax_percentage' => 'decimal:2',
             'work_order_sequence' => 'integer',
@@ -140,5 +143,125 @@ class Tenant extends Model
             ->whereYear('created_at', now()->year)
             ->count();
         return $monthlyCount < $limit['value'];
+    }
+
+    // ========================
+    // WHATSAPP METHODS
+    // ========================
+
+    public function getEvolutionConfig(): array
+    {
+        return $this->configuracion['evolution_api'] ?? [];
+    }
+
+    public function getWhatsappConfig(): array
+    {
+        $config = $this->getEvolutionConfig();
+        return [
+            'instance' => $config['instance'] ?? null,
+            'connected' => $config['connected'] ?? false,
+            'connected_at' => $config['connected_at'] ?? null,
+            'whatsapp_plantilla' => $config['whatsapp_plantilla'] ?? 'breve',
+            'whatsapp_plantilla_custom' => $config['whatsapp_plantilla_custom'] ?? null,
+        ];
+    }
+
+    public function whatsappHabilitado(): bool
+    {
+        if (!$this->hasFeature('notifications_whatsapp')) {
+            return false;
+        }
+        $evolutionConfig = $this->getEvolutionConfig();
+        return !empty($evolutionConfig['instance'])
+            && !empty($evolutionConfig['connected']);
+    }
+
+    public function getLimiteFuncionalidad(string $key): ?int
+    {
+        $limits = $this->configuracion['limites']['funcionalidades'] ?? [];
+        return $limits[$key] ?? null;
+    }
+
+    public function getWhatsappUsadosMes(): int
+    {
+        $config = $this->configuracion ?? [];
+        $func = $config['limites']['funcionalidades'] ?? [];
+        $periodo = now()->format('Y-m');
+        $periodoAlmacenado = $func['whatsapp_mes_periodo'] ?? null;
+
+        if ($periodoAlmacenado !== $periodo) {
+            return 0;
+        }
+        return $func['whatsapp_mes_count'] ?? 0;
+    }
+
+    public function canSendWhatsapp(): bool
+    {
+        $limite = $this->getLimiteFuncionalidad('whatsapp_mes');
+        if ($limite === null || $limite === -1) {
+            return true;
+        }
+        return $this->getWhatsappUsadosMes() < $limite;
+    }
+
+    public function incrementarConsumoWhatsapp(int $count = 1): void
+    {
+        DB::table('tenants')->where('id', $this->id)->update([
+            'configuracion' => DB::raw("JSON_SET(
+                COALESCE(configuracion, '{}'),
+                '$.limites.funcionalidades.whatsapp_mes_count',
+                COALESCE(
+                    JSON_EXTRACT(configuracion, '$.limites.funcionalidades.whatsapp_mes_count'),
+                    0
+                ) + {$count},
+                '$.limites.funcionalidades.whatsapp_mes_periodo',
+                '\"{$this->freshTimestamp()->format('Y-m')}\"'
+            )"),
+        ]);
+    }
+
+    public function getPendingNotifications(?string $type = null): array
+    {
+        $pendientes = $this->configuracion['pending_notifications'] ?? [];
+        if ($type) {
+            return array_values(array_filter($pendientes, fn($p) => ($p['type'] ?? null) === $type));
+        }
+        return $pendientes;
+    }
+
+    public function addPendingNotification(string $type, array $data): void
+    {
+        $config = $this->configuracion ?? [];
+        $pendientes = $config['pending_notifications'] ?? [];
+        $pendientes[] = [
+            'id' => 'pend_' . uniqid(),
+            'type' => $type,
+            'data' => $data,
+            'created_at' => now()->toDateTimeString(),
+        ];
+        $config['pending_notifications'] = $pendientes;
+        $this->update(['configuracion' => $config]);
+    }
+
+    public function removePendingNotification(string $id): void
+    {
+        $config = $this->configuracion ?? [];
+        $pendientes = $config['pending_notifications'] ?? [];
+        $config['pending_notifications'] = array_values(array_filter(
+            $pendientes,
+            fn($p) => ($p['id'] ?? null) !== $id
+        ));
+        $this->update(['configuracion' => $config]);
+    }
+
+    public function clearPendingNotifications(string $type): void
+    {
+        $config = $this->configuracion ?? [];
+        $pendientes = $config['pending_notifications'] ?? [];
+        $config['pending_notifications'] = array_values(array_filter(
+            $pendientes,
+            fn($p) => ($p['type'] ?? null) !== $type
+        ));
+        $this->update(['configuracion' => $config]);
     }
 }

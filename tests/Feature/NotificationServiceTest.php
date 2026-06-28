@@ -8,6 +8,7 @@ use App\Models\NotificationTemplate;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkOrder;
+use App\Services\EvolutionApiService;
 use App\Services\NotificationService;
 use App\Services\TenantMailService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,62 +99,127 @@ class NotificationServiceTest extends TestCase
         $this->assertEquals('Cliente sin email', $notification->response);
     }
 
-    public function test_send_whatsapp_when_webhook_not_configured_marks_logged(): void
+    public function test_send_whatsapp_when_not_configured_falls_back_to_email(): void
     {
         $this->client->update(['notification_preference' => 'whatsapp']);
-        $this->tenant->update(['whatsapp_webhook_url' => null]);
+
+        $notification = $this->service->send($this->workOrder, 'quote_sent');
+
+        $this->assertNotNull($notification);
+        $this->assertEquals('email', $notification->channel);
+        $this->assertEquals('sent', $notification->status);
+    }
+
+    public function test_send_whatsapp_when_not_configured_and_no_email_marks_logged(): void
+    {
+        $this->client->update(['notification_preference' => 'whatsapp', 'email' => null]);
 
         $notification = $this->service->send($this->workOrder, 'quote_sent');
 
         $this->assertNotNull($notification);
         $this->assertEquals('logged', $notification->status);
-        $this->assertEquals('WhatsApp webhook no configurado', $notification->response);
     }
 
-    public function test_send_whatsapp_with_webhook_configured(): void
+    public function test_send_whatsapp_with_evolution_api_configured(): void
     {
-        Http::fake([
-            'https://n8n.test/*' => Http::response(['status' => 'ok'], 200),
+        config(['services.n8n.modulacion_whatsapp_url' => null]);
+
+        $plan = \App\Models\Plan::create([
+            'name' => 'Premium Test',
+            'slug' => 'premium-test',
+            'description' => 'Test plan',
+            'price' => 499,
+            'features' => ['notifications_whatsapp' => true],
+            'limits' => ['max_users' => 5, 'max_clients' => -1, 'max_monthly_work_orders' => -1, 'storage_mb' => 100],
         ]);
 
         $this->client->update(['notification_preference' => 'whatsapp']);
+        $this->tenant->update([
+            'plan_id' => $plan->id,
+            'configuracion' => [
+                'evolution_api' => [
+                    'instance' => 'tenant_test',
+                    'connected' => true,
+                    'connected_at' => now()->toDateTimeString(),
+                    'whatsapp_plantilla' => 'breve',
+                ],
+                'limites' => ['funcionalidades' => ['whatsapp_mes' => 1000, 'whatsapp_mes_count' => 0, 'whatsapp_mes_periodo' => now()->format('Y-m')]],
+            ],
+        ]);
+
+        $this->mock(EvolutionApiService::class, function ($mock) {
+            $mock->shouldReceive('sendText')->once()->andReturn(['_status' => 200]);
+        });
 
         $notification = $this->service->send($this->workOrder, 'quote_sent');
 
         $this->assertNotNull($notification);
         $this->assertEquals('sent', $notification->status);
-
-        Http::assertSent(function ($request) {
-            return $request->url() === 'https://n8n.test/webhook/whatsapp'
-                && $request['phone'] === '5551234567'
-                && $request['work_order_id'] === $this->workOrder->id
-                && $request['event'] === 'quote_sent';
-        });
     }
 
     public function test_whatsapp_strips_non_numeric_phone(): void
     {
-        Http::fake();
+        config(['services.n8n.modulacion_whatsapp_url' => null]);
+
+        $plan = \App\Models\Plan::create([
+            'name' => 'Premium Test',
+            'slug' => 'premium-test',
+            'description' => 'Test plan',
+            'price' => 499,
+            'features' => ['notifications_whatsapp' => true],
+            'limits' => ['max_users' => 5, 'max_clients' => -1, 'max_monthly_work_orders' => -1, 'storage_mb' => 100],
+        ]);
 
         $this->client->update([
             'notification_preference' => 'whatsapp',
             'phone' => '+52 (555) 123-4567',
         ]);
+        $this->tenant->update([
+            'plan_id' => $plan->id,
+            'configuracion' => [
+                'evolution_api' => [
+                    'instance' => 'tenant_test',
+                    'connected' => true,
+                    'whatsapp_plantilla' => 'breve',
+                ],
+                'limites' => ['funcionalidades' => ['whatsapp_mes' => 1000, 'whatsapp_mes_count' => 0, 'whatsapp_mes_periodo' => now()->format('Y-m')]],
+            ],
+        ]);
+
+        $this->mock(EvolutionApiService::class, function ($mock) {
+            $mock->shouldReceive('sendText')->once()->andReturn(['_status' => 200]);
+        });
 
         $notification = $this->service->send($this->workOrder, 'quote_sent');
 
         $this->assertEquals('sent', $notification->status);
-
-        Http::assertSent(function ($request) {
-            return $request['phone'] === '525551234567';
-        });
     }
 
     public function test_whatsapp_fails_with_empty_phone(): void
     {
+        $plan = \App\Models\Plan::create([
+            'name' => 'Premium Test',
+            'slug' => 'premium-test',
+            'description' => 'Test plan',
+            'price' => 499,
+            'features' => ['notifications_whatsapp' => true],
+            'limits' => ['max_users' => 5, 'max_clients' => -1, 'max_monthly_work_orders' => -1, 'storage_mb' => 100],
+        ]);
+
         $this->client->update([
             'notification_preference' => 'whatsapp',
             'phone' => '',
+        ]);
+        $this->tenant->update([
+            'plan_id' => $plan->id,
+            'configuracion' => [
+                'evolution_api' => [
+                    'instance' => 'tenant_test',
+                    'connected' => true,
+                    'whatsapp_plantilla' => 'breve',
+                ],
+                'limites' => ['funcionalidades' => ['whatsapp_mes' => 1000, 'whatsapp_mes_count' => 0, 'whatsapp_mes_periodo' => now()->format('Y-m')]],
+            ],
         ]);
 
         $notification = $this->service->send($this->workOrder, 'quote_sent');

@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'evolution' => [
+        'base_url' => env('EVOLUTION_API_BASE_URL', 'https://evolutionapi.nexacore.com.mx'),
+        'api_key' => env('EVOLUTION_API_KEY'),
+    ],
+
+    'n8n' => [
+        'modulacion_whatsapp_url' => env('N8N_MODULACION_WHATSAPP_URL'),
+        'modulacion_whatsapp_token' => env('N8N_MODULACION_WHATSAPP_TOKEN'),
+    ],
+
 ];

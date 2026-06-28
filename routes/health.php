@@ -327,6 +327,28 @@ Route::get('/__e2e/simulate-pickup-reminder', function (\Illuminate\Http\Request
     }
 });
 
+Route::get('/__e2e/set-whatsapp-instance', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    $connected = filter_var($request->query('connected', 'false'), FILTER_VALIDATE_BOOLEAN);
+    $instance = $request->query('instance');
+    if (!$email) {
+        return response()->json(['error' => 'email required'], 400);
+    }
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'tenant not found'], 404);
+    }
+    $tenant = $user->tenant;
+    $config = $tenant->configuracion ?? [];
+    $config['evolution_api'] = [
+        'instance' => $instance ?: ('tenant_' . $tenant->id),
+        'connected' => $connected,
+        'connected_at' => $connected ? now()->toDateTimeString() : null,
+    ];
+    $tenant->update(['configuracion' => $config]);
+    return response()->json(['status' => 'instance_set', 'tenant' => $tenant->id, 'config' => $config['evolution_api']]);
+});
+
 Route::get('/__e2e/seed-plans', function () {
     try {
         $plans = \App\Models\Plan::all();

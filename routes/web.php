@@ -131,7 +131,17 @@ Route::middleware(['auth', 'not-superadmin', 'subscription.active', 'session.uni
     Route::get('/settings/taxes', [SettingsController::class, 'taxes'])->name('settings.taxes')->middleware('can:settings.taxes');
     Route::put('/settings/taxes', [SettingsController::class, 'updateTaxes'])->name('settings.taxes.update')->middleware('can:settings.taxes');
 
-    Route::post('/settings/notifications/templates', [SettingsController::class, 'updateNotificationTemplate'])->name('settings.notifications.templates.update')->middleware('can:settings.company');
+    // WhatsApp Evolution API
+    Route::get('/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('whatsapp.config');
+    Route::post('/whatsapp/conectar', [App\Http\Controllers\Admin\WhatsAppController::class, 'conectar'])->name('whatsapp.conectar');
+    Route::get('/whatsapp/estado', [App\Http\Controllers\Admin\WhatsAppController::class, 'estado'])->name('whatsapp.estado');
+    Route::post('/whatsapp/desconectar', [App\Http\Controllers\Admin\WhatsAppController::class, 'desconectar'])->name('whatsapp.desconectar');
+    Route::get('/whatsapp/contactos', [App\Http\Controllers\Admin\WhatsAppController::class, 'contactos'])->name('whatsapp.contactos');
+    Route::get('/whatsapp/grupos', [App\Http\Controllers\Admin\WhatsAppController::class, 'grupos'])->name('whatsapp.grupos');
+    Route::get('/whatsapp/pendientes', [App\Http\Controllers\Admin\WhatsAppController::class, 'pendientes'])->name('whatsapp.pendientes');
+    Route::post('/whatsapp/reenviar-pendiente', [App\Http\Controllers\Admin\WhatsAppController::class, 'reenviarPendiente'])->name('whatsapp.reenviar-pendiente');
+    Route::post('/whatsapp/descartar-pendiente', [App\Http\Controllers\Admin\WhatsAppController::class, 'descartarPendiente'])->name('whatsapp.descartar-pendiente');
+    Route::post('/whatsapp/descartar-todas-pendientes', [App\Http\Controllers\Admin\WhatsAppController::class, 'descartarTodasPendientes'])->name('whatsapp.descartar-todas-pendientes');
 
     // Reportes
     Route::get('/reportes', [ReportController::class, 'index'])->name('reportes.index');

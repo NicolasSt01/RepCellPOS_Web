@@ -7,6 +7,8 @@ use App\Models\Notification;
 use App\Models\NotificationTemplate;
 use App\Models\WorkOrder;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
@@ -104,10 +106,14 @@ class NotificationService
     {
         try {
             $tenant = $workOrder->tenant;
-            $webhookUrl = $tenant->whatsapp_webhook_url;
 
-            if (!$webhookUrl) {
-                $notification->markAsLogged('WhatsApp webhook no configurado');
+            if (!$tenant->whatsappHabilitado()) {
+                if ($client->email) {
+                    $notification->update(['channel' => 'email']);
+                    $this->sendEmail($notification, $client, $workOrder);
+                    return;
+                }
+                $notification->markAsLogged('WhatsApp no disponible, cliente sin email');
                 return;
             }
 
@@ -117,21 +123,48 @@ class NotificationService
                 return;
             }
 
+            if (!$tenant->canSendWhatsapp()) {
+                $tenant->addPendingNotification('whatsapp', [
+                    'work_order_id' => $workOrder->id,
+                    'client_id' => $client->id,
+                    'phone' => $phone,
+                    'event' => $notification->event,
+                    'message' => $notification->message,
+                    'client_name' => $client->name,
+                ]);
+                $notification->markAsLogged('Límite mensual alcanzado, pendiente encolado');
+                return;
+            }
+
             $message = $notification->message;
+            $n8nUrl = config('services.n8n.modulacion_whatsapp_url');
+            $n8nToken = config('services.n8n.modulacion_whatsapp_token');
 
-            \Illuminate\Support\Facades\Http::post($webhookUrl, [
-                'phone' => $phone,
-                'message' => $message,
-                'work_order_id' => $workOrder->id,
-                'work_order_number' => $workOrder->work_order_number,
-                'event' => $notification->event,
-                'tenant_id' => $tenant->id,
-            ]);
+            if ($n8nUrl) {
+                $response = Http::withToken($n8nToken)->post($n8nUrl, [
+                    'tenant_id' => $tenant->id,
+                    'phone' => $phone,
+                    'message' => $message,
+                    'channel' => 'evolution',
+                    'event' => $notification->event,
+                    'work_order_id' => $workOrder->id,
+                    'work_order_number' => $workOrder->work_order_number,
+                    'instance' => $tenant->getWhatsappConfig()['instance'],
+                    'plantilla' => $tenant->getWhatsappConfig()['whatsapp_plantilla'],
+                    'evolution_base_url' => config('services.evolution.base_url'),
+                    'evolution_api_key' => config('services.evolution.api_key'),
+                ]);
+            } else {
+                $evolutionApi = app(\App\Services\EvolutionApiService::class);
+                $instance = $tenant->getWhatsappConfig()['instance'];
+                $evolutionApi->sendText($instance, $phone, $message);
+            }
 
-            $notification->markAsSent('WhatsApp message queued to n8n');
+            $tenant->incrementarConsumoWhatsapp();
+            $notification->markAsSent('WhatsApp enviado vía Evolution API');
         } catch (\Exception $e) {
             $notification->markAsFailed($e->getMessage());
-            \Illuminate\Support\Facades\Log::error('Error sending WhatsApp notification: ' . $e->getMessage());
+            Log::error('Error sending WhatsApp notification: ' . $e->getMessage());
         }
     }
 

@@ -65,7 +65,7 @@ class AuthController extends Controller
         return redirect('/login');
     }
 
-    public function verifyEmail(string $token): RedirectResponse
+    public function verifyEmail(string $token): View|RedirectResponse
     {
         $user = User::where('email_verification_token', $token)->first();
 
@@ -87,7 +87,10 @@ class AuthController extends Controller
             Auth::login($user);
         }
 
-        return redirect()->route('dashboard')
-            ->with('success', 'Tu correo electrónico ha sido verificado exitosamente.');
+        $dashboardRoute = $user->isSuperAdmin()
+            ? route('admin.dashboard')
+            : route('dashboard');
+
+        return view('auth.verified', compact('dashboardRoute'));
     }
 }

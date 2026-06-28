@@ -326,3 +326,12 @@ Route::get('/__e2e/simulate-pickup-reminder', function (\Illuminate\Http\Request
         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
     }
 });
+
+Route::get('/__e2e/seed-plans', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'PlansSeeder', '--force' => true]);
+        return response()->json(['status' => 'plans_seeded', 'output' => \Illuminate\Support\Facades\Artisan::output()]);
+    } catch (\Exception $e) {
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+});

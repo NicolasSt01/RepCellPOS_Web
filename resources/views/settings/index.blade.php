@@ -138,6 +138,69 @@
                     @enderror
                 </div>
 
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Configuración de Correo SMTP</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Configura tu propio servidor SMTP para enviar notificaciones a tus clientes.
+                        Estos datos son responsabilidad de tu empresa.
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="mail_host" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Servidor SMTP</label>
+                            <input type="text" name="mail_host" id="mail_host" value="{{ old('mail_host', $tenant->mail_host) }}"
+                                class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"
+                                placeholder="smtp.gmail.com">
+                        </div>
+
+                        <div>
+                            <label for="mail_port" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Puerto</label>
+                            <input type="text" name="mail_port" id="mail_port" value="{{ old('mail_port', $tenant->mail_port) }}"
+                                class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"
+                                placeholder="587">
+                        </div>
+
+                        <div>
+                            <label for="mail_username" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Usuario</label>
+                            <input type="text" name="mail_username" id="mail_username" value="{{ old('mail_username', $tenant->mail_username) }}"
+                                class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"
+                                placeholder="tu@correo.com">
+                        </div>
+
+                        <div>
+                            <label for="mail_password" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Contraseña</label>
+                            <input type="password" name="mail_password" id="mail_password" value="{{ old('mail_password', $tenant->mail_password ? '********' : '') }}"
+                                class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"
+                                placeholder="••••••••">
+                            <p class="mt-1 text-xs text-gray-400">Déjalo en blanco para mantener la actual.</p>
+                        </div>
+
+                        <div>
+                            <label for="mail_encryption" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Encriptación</label>
+                            <select name="mail_encryption" id="mail_encryption"
+                                class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6">
+                                <option value="tls" {{ ($tenant->mail_encryption ?? 'tls') === 'tls' ? 'selected' : '' }}>TLS</option>
+                                <option value="ssl" {{ $tenant->mail_encryption === 'ssl' ? 'selected' : '' }}>SSL</option>
+                                <option value="" {{ $tenant->mail_encryption === '' ? 'selected' : '' }}>Ninguna</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="mail_from_address" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Correo desde</label>
+                            <input type="email" name="mail_from_address" id="mail_from_address" value="{{ old('mail_from_address', $tenant->mail_from_address) }}"
+                                class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"
+                                placeholder="notificaciones@tudominio.com">
+                        </div>
+
+                        <div>
+                            <label for="mail_from_name" class="block text-sm font-medium text-gray-900 dark:text-gray-100">Nombre desde</label>
+                            <input type="text" name="mail_from_name" id="mail_from_name" value="{{ old('mail_from_name', $tenant->mail_from_name) }}"
+                                class="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 sm:text-sm sm:leading-6"
+                                placeholder="{{ $tenant->name }}">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button type="button" @click="activeStep = 1" class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                         Siguiente →

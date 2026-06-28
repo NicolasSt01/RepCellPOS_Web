@@ -11,26 +11,24 @@ Route::get('/health', function () {
     }
 });
 
-Route::get('/__e2e/read-log', function () {
+// ── Rutas E2E protegidas solo para superadmin autenticado ──────────
+Route::middleware(['auth', \App\Http\Middleware\CheckSuperAdmin::class])->prefix('__e2e')->name('e2e.')->group(function () {
+
+Route::get('/read-log', function () {
     $logFile = storage_path('logs/laravel.log');
     if (!file_exists($logFile)) {
         return response('LOG_NOT_FOUND');
     }
     $lines = file($logFile);
-    // Return the full log — E2E tests clear it before each run
     return response(implode('', $lines));
 });
 
-Route::get('/__e2e/cleanup', function () {
-    // Disable FK checks to allow truncating tables with foreign keys
+Route::get('/cleanup', function () {
     \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
     \Illuminate\Support\Facades\DB::table('work_orders')->truncate();
-    // notifications table references work_orders
     \Illuminate\Support\Facades\DB::table('notifications')->truncate();
     \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
-    // Reset work order sequence for all tenants
     \Illuminate\Support\Facades\DB::table('tenants')->update(['work_order_sequence' => 0]);
-    // Clear log file to avoid detecting old errors
     $logFile = storage_path('logs/laravel.log');
     if (file_exists($logFile)) {
         file_put_contents($logFile, '');
@@ -38,7 +36,7 @@ Route::get('/__e2e/cleanup', function () {
     return response()->json(['status' => 'cleaned']);
 });
 
-Route::get('/__e2e/verify-email', function (\Illuminate\Http\Request $request) {
+Route::get('/verify-email', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     if (!$email) {
         return response()->json(['error' => 'Email parameter required'], 400);
@@ -56,7 +54,7 @@ Route::get('/__e2e/verify-email', function (\Illuminate\Http\Request $request) {
     return response()->json(['status' => 'email_verified', 'email' => $user->email]);
 });
 
-Route::get('/__e2e/get-verification-token', function (\Illuminate\Http\Request $request) {
+Route::get('/get-verification-token', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     if (!$email) {
         return response()->json(['error' => 'Email parameter required'], 400);
@@ -68,7 +66,7 @@ Route::get('/__e2e/get-verification-token', function (\Illuminate\Http\Request $
     return response()->json(['token' => $user->email_verification_token]);
 });
 
-Route::get('/__e2e/expire-email-verification', function (\Illuminate\Http\Request $request) {
+Route::get('/expire-email-verification', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     if (!$email) {
         return response()->json(['error' => 'Email parameter required'], 400);
@@ -77,14 +75,13 @@ Route::get('/__e2e/expire-email-verification', function (\Illuminate\Http\Reques
     if (!$user) {
         return response()->json(['error' => 'User not found'], 404);
     }
-    // Use raw DB update to bypass $fillable guard on created_at
     \Illuminate\Support\Facades\DB::table('users')
         ->where('id', $user->id)
         ->update(['created_at' => now()->subDays(3)]);
     return response()->json(['status' => 'verification_expired', 'email' => $user->email]);
 });
 
-Route::get('/__e2e/expire-trial', function (\Illuminate\Http\Request $request) {
+Route::get('/expire-trial', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     if (!$email) {
         return response()->json(['error' => 'Email parameter required'], 400);
@@ -99,7 +96,7 @@ Route::get('/__e2e/expire-trial', function (\Illuminate\Http\Request $request) {
     return response()->json(['status' => 'trial_expired', 'tenant' => $user->tenant->name]);
 });
 
-Route::get('/__e2e/fill-clients', function (\Illuminate\Http\Request $request) {
+Route::get('/fill-clients', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     $count = (int) ($request->query('count', 50));
     if (!$email) {
@@ -121,7 +118,7 @@ Route::get('/__e2e/fill-clients', function (\Illuminate\Http\Request $request) {
     return response()->json(['status' => 'clients_created', 'count' => $count, 'total' => $tenant->clients()->count()]);
 });
 
-Route::get('/__e2e/activate-plan', function (\Illuminate\Http\Request $request) {
+Route::get('/activate-plan', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     $planSlug = $request->query('plan');
     if (!$email || !$planSlug) {
@@ -143,7 +140,7 @@ Route::get('/__e2e/activate-plan', function (\Illuminate\Http\Request $request) 
     return response()->json(['status' => 'plan_activated', 'tenant' => $user->tenant->name, 'plan' => $plan->name]);
 });
 
-Route::get('/__e2e/expire-subscription', function (\Illuminate\Http\Request $request) {
+Route::get('/expire-subscription', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     if (!$email) {
         return response()->json(['error' => 'Email parameter required'], 400);
@@ -174,7 +171,7 @@ Route::get('/__e2e/expire-subscription', function (\Illuminate\Http\Request $req
     return response()->json(['status' => 'subscription_expired', 'tenant' => $tenant->name]);
 });
 
-Route::get('/__e2e/create-user', function (\Illuminate\Http\Request $request) {
+Route::get('/create-user', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     $newUserEmail = $request->query('new_email');
     $newUserName = $request->query('new_name');
@@ -198,7 +195,7 @@ Route::get('/__e2e/create-user', function (\Illuminate\Http\Request $request) {
     return response()->json(['status' => 'user_created', 'user' => $newUser->name, 'role' => $role]);
 });
 
-Route::get('/__e2e/create-sale', function (\Illuminate\Http\Request $request) {
+Route::get('/create-sale', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     if (!$email) {
         return response()->json(['error' => 'Email parameter required'], 400);
@@ -231,7 +228,7 @@ Route::get('/__e2e/create-sale', function (\Illuminate\Http\Request $request) {
     return response()->json(['status' => 'sale_created', 'expected_cash' => $register->getExpectedCash()]);
 });
 
-Route::get('/__e2e/create-work-order', function (\Illuminate\Http\Request $request) {
+Route::get('/create-work-order', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     if (!$email) {
         return response()->json(['error' => 'Email parameter required'], 400);
@@ -268,7 +265,7 @@ Route::get('/__e2e/create-work-order', function (\Illuminate\Http\Request $reque
     return response()->json(['status' => 'work_order_created', 'id' => $wo->id, 'number' => $wo->work_order_number]);
 });
 
-Route::get('/__e2e/set-work-order-status', function (\Illuminate\Http\Request $request) {
+Route::get('/set-work-order-status', function (\Illuminate\Http\Request $request) {
     $id = $request->query('id');
     $status = $request->query('status');
     if (!$id || !$status) {
@@ -282,23 +279,7 @@ Route::get('/__e2e/set-work-order-status', function (\Illuminate\Http\Request $r
     return response()->json(['status' => 'ok', 'new_status' => $status]);
 });
 
-Route::get('/__e2e/create-superadmin', function () {
-    $user = \App\Models\User::where('email', 'superadmin@repcellpos.com')->first();
-    if ($user) {
-        return response()->json(['status' => 'already_exists', 'email' => $user->email]);
-    }
-    $user = \App\Models\User::create([
-        'name' => 'Super Admin',
-        'email' => 'superadmin@repcellpos.com',
-        'password' => \Illuminate\Support\Facades\Hash::make('password'),
-        'is_superadmin' => true,
-        'is_active' => true,
-        'email_verified_at' => now(),
-    ]);
-    return response()->json(['status' => 'superadmin_created', 'email' => $user->email]);
-});
-
-Route::get('/__e2e/simulate-pickup-reminder', function (\Illuminate\Http\Request $request) {
+Route::get('/simulate-pickup-reminder', function (\Illuminate\Http\Request $request) {
     $id = $request->query('id');
     if (!$id) {
         return response()->json(['error' => 'work_order_id required'], 400);
@@ -309,15 +290,12 @@ Route::get('/__e2e/simulate-pickup-reminder', function (\Illuminate\Http\Request
         return response()->json(['error' => 'Work order not found'], 404);
     }
 
-    // Backdate to 4 days ago so it exceeds the 3-day threshold
     $workOrder->update(['updated_at' => now()->subDays(4)]);
 
-    // Mark all ready_for_pickup notifications as sent
     \App\Models\Notification::where('work_order_id', $id)
         ->where('event', 'ready_for_pickup')
         ->update(['status' => 'sent']);
 
-    // Run the reminder command with --days=0 so it catches our backdated order
     try {
         \Illuminate\Support\Facades\Artisan::call('pickup:remind', ['--days' => 0]);
         $output = \Illuminate\Support\Facades\Artisan::output();
@@ -327,7 +305,7 @@ Route::get('/__e2e/simulate-pickup-reminder', function (\Illuminate\Http\Request
     }
 });
 
-Route::get('/__e2e/set-whatsapp-instance', function (\Illuminate\Http\Request $request) {
+Route::get('/set-whatsapp-instance', function (\Illuminate\Http\Request $request) {
     $email = $request->query('email');
     $connected = filter_var($request->query('connected', 'false'), FILTER_VALIDATE_BOOLEAN);
     $instance = $request->query('instance');
@@ -349,7 +327,7 @@ Route::get('/__e2e/set-whatsapp-instance', function (\Illuminate\Http\Request $r
     return response()->json(['status' => 'instance_set', 'tenant' => $tenant->id, 'config' => $config['evolution_api']]);
 });
 
-Route::get('/__e2e/seed-plans', function () {
+Route::get('/seed-plans', function () {
     try {
         $plans = \App\Models\Plan::all();
         foreach ($plans as $plan) {
@@ -361,4 +339,27 @@ Route::get('/__e2e/seed-plans', function () {
     } catch (\Exception $e) {
         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
     }
+});
+
+}); // end __e2e group
+
+// ── Ruta para crear superadmin inicial (solo si no existe ninguno) ──
+Route::get('/__e2e/create-superadmin', function () {
+    $existing = \App\Models\User::where('is_superadmin', true)->exists();
+    if ($existing) {
+        return response()->json(['status' => 'error', 'message' => 'Ya existe un superadmin. Debes acceder como superadmin para usar las rutas E2E.']);
+    }
+    $user = \App\Models\User::where('email', 'superadmin@repcellpos.com')->first();
+    if ($user) {
+        return response()->json(['status' => 'already_exists', 'email' => $user->email]);
+    }
+    $user = \App\Models\User::create([
+        'name' => 'Super Admin',
+        'email' => 'superadmin@repcellpos.com',
+        'password' => \Illuminate\Support\Facades\Hash::make('password'),
+        'is_superadmin' => true,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+    return response()->json(['status' => 'superadmin_created', 'email' => $user->email]);
 });

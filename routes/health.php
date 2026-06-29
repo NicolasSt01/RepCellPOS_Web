@@ -327,6 +327,43 @@ Route::get('/set-whatsapp-instance', function (\Illuminate\Http\Request $request
     return response()->json(['status' => 'instance_set', 'tenant' => $tenant->id, 'config' => $config['evolution_api']]);
 });
 
+Route::get('/test-smtp', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email', 'admin@nexacore.com.mx');
+    $user = \App\Models\User::where('email', $email)->first();
+    if (!$user || !$user->tenant) {
+        return response()->json(['error' => 'tenant not found'], 404);
+    }
+    $tenant = $user->tenant;
+
+    $info = [
+        'mail_host' => $tenant->mail_host,
+        'mail_port' => $tenant->mail_port,
+        'mail_username' => $tenant->mail_username,
+        'mail_password_length' => strlen($tenant->mail_password ?? ''),
+        'mail_password_preview' => substr($tenant->mail_password ?? '', 0, 4) . '...',
+        'mail_encryption' => $tenant->mail_encryption,
+        'mail_from_address' => $tenant->mail_from_address,
+        'mail_from_name' => $tenant->mail_from_name,
+    ];
+
+    try {
+        app(\App\Services\TenantMailService::class)->configureForTenant($tenant);
+        \Illuminate\Support\Facades\Config::set('mail.default', 'smtp');
+
+        \Illuminate\Support\Facades\Mail::raw('Test email from RepCellPOS SMTP config', function ($msg) use ($tenant) {
+            $msg->to($tenant->email)
+                ->subject('SMTP Test - ' . now());
+        });
+
+        $info['test_result'] = 'sent';
+    } catch (\Exception $e) {
+        $info['test_result'] = 'failed';
+        $info['test_error'] = $e->getMessage();
+    }
+
+    return response()->json($info);
+});
+
 Route::get('/seed-plans', function () {
     try {
         $plans = \App\Models\Plan::all();

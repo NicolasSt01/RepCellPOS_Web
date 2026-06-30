@@ -17,10 +17,13 @@ class TenantSubscription extends Model
         'status',
         'last_payment_date',
         'next_payment_date',
+        'cancel_at_period_end',
         'payment_history',
         'notes',
         'paid_via',
         'payment_proof',
+        'stripe_subscription_id',
+        'stripe_price_id',
     ];
 
     protected function casts(): array
@@ -31,6 +34,7 @@ class TenantSubscription extends Model
             'end_date' => 'date',
             'last_payment_date' => 'date',
             'next_payment_date' => 'date',
+            'cancel_at_period_end' => 'boolean',
             'payment_history' => 'array',
         ];
     }
@@ -55,7 +59,7 @@ class TenantSubscription extends Model
         return $this->status === 'expirada' || ($this->end_date && $this->end_date->isPast() && $this->status !== 'cancelada');
     }
 
-    public function markAsPaid(float $amount, string $reference = null): void
+    public function markAsPaid(float $amount, ?string $reference = null): void
     {
         $history = $this->payment_history ?? [];
         $history[] = [

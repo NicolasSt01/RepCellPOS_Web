@@ -39,14 +39,14 @@
         </div>
         @endif
 
-        {{ $extraFilters }}
+        {!! $extraFilters !!}
 
         <div class="flex gap-2">
             <button type="submit"
                 class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
                 Filtrar
             </button>
-            @if(request()->anyFilled(['date_from', 'date_to', 'status', 'priority', 'assigned_to', 'technician', 'category', 'payment_method', 'type', 'product']))
+            @if(request()->anyFilled(['date_from', 'date_to', 'status', 'priority', 'assigned_to', 'technician', 'category', 'payment_method', 'type', 'product', 'product_id']))
             <a href="{{ route(explode('?', request()->fullUrl())[0] == request()->url() ? request()->route()->getName() : '#') }}"
                 class="inline-flex items-center rounded-md bg-white dark:bg-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                 Limpiar

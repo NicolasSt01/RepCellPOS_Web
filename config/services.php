@@ -45,4 +45,10 @@ return [
         'modulacion_whatsapp_token' => env('N8N_MODULACION_WHATSAPP_TOKEN'),
     ],
 
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
 ];

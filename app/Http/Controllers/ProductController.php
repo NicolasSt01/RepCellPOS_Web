@@ -97,13 +97,25 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Producto creado exitosamente.');
     }
 
-    public function show(Product $product): View
+    public function show(Request $request, Product $product): View
     {
-        $product->load(['category', 'kardexMovements' => function ($q) {
-            $q->with('user')->latest()->take(20);
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        $product->load('category');
+
+        $product->load(['kardexMovements' => function ($q) use ($dateFrom, $dateTo) {
+            $q->with('user');
+            if ($dateFrom) {
+                $q->whereDate('created_at', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $q->whereDate('created_at', '<=', $dateTo);
+            }
+            $q->latest();
         }]);
 
-        return view('products.show', compact('product'));
+        return view('products.show', compact('product', 'dateFrom', 'dateTo'));
     }
 
     public function edit(Product $product): View

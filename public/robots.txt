@@ -1,2 +1,4 @@
 User-agent: *
 Disallow:
+
+Sitemap: https://repcellpos.nexacore.com.mx/sitemap.xml

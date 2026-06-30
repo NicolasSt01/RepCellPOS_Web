@@ -12,6 +12,15 @@
     @include('reportes.partials.filtros', [
         'route' => route('reportes.kardex'),
         'showDateRange' => true,
+        'extraFilters' => '
+            <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Producto</label>
+                <select name="product_id"
+                    class="block rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 text-sm">
+                    ' . $productOptions . '
+                </select>
+            </div>
+        ',
     ])
 
     <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -64,7 +73,7 @@
                         @forelse($movements as $movement)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ App\Helpers\ReportHelper::formatDate($movement->created_at) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $movement->product_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $movement->product?->name ?? '—' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 @php
                                     $typeClass = match($movement->type) {
@@ -80,7 +89,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">{{ $movement->quantity }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-400">{{ $movement->previous_stock }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100 font-medium">{{ $movement->resulting_stock }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $movement->user_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $movement->user->name ?? '—' }}</td>
                             <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">{{ $movement->notes }}</td>
                         </tr>
                         @empty

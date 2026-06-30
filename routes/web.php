@@ -37,11 +37,43 @@ Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->nam
 // Logout must be accessible to all authenticated users including superadmin
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Stripe webhook — no CSRF, no auth
+Route::post('/stripe/webhook', [\App\Http\Controllers\StripeWebhookController::class, 'handle'])
+    ->name('stripe.webhook');
+
+// Test helpers — only in local environment
+if (app()->environment('local')) {
+    Route::get('/__test/token-lookup', function (\Illuminate\Http\Request $request) {
+        $user = \App\Models\User::where('email', $request->query('email'))->first();
+        if (!$user) return response()->json(['error' => 'not found'], 404);
+        return response()->json(['token' => $user->email_verification_token]);
+    });
+
+    Route::get('/__test/check-subscription', function (\Illuminate\Http\Request $request) {
+        $user = \App\Models\User::where('email', $request->query('email'))->first();
+        if (!$user) return response()->json(['error' => 'not found'], 404);
+        $tenant = $user->tenant;
+        if (!$tenant) return response()->json(['error' => 'no tenant'], 404);
+        $subscription = \App\Models\TenantSubscription::where('tenant_id', $tenant->id)
+            ->latest()->first();
+        return response()->json([
+            'subscription_status' => $tenant->subscription_status,
+            'stripe_customer_id' => $tenant->stripe_customer_id,
+            'stripe_subscription_id' => $subscription?->stripe_subscription_id,
+            'subscription_db_status' => $subscription?->status,
+            'cancel_at_period_end' => $subscription?->cancel_at_period_end ?? false,
+        ]);
+    });
+}
+
 // Subscription upgrade routes — accessible without subscription.active check
 Route::middleware(['auth', 'not-superadmin'])->group(function () {
     Route::get('/upgrade', [\App\Http\Controllers\SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
     Route::post('/upgrade/select', [\App\Http\Controllers\SubscriptionController::class, 'selectPlan'])->name('subscription.select');
     Route::post('/upgrade/payment-proof', [\App\Http\Controllers\SubscriptionController::class, 'uploadProof'])->name('subscription.payment-proof');
+    Route::post('/upgrade/portal', [\App\Http\Controllers\SubscriptionController::class, 'portal'])->name('subscription.portal');
+    Route::post('/upgrade/cancel', [\App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::post('/upgrade/resume', [\App\Http\Controllers\SubscriptionController::class, 'resume'])->name('subscription.resume');
     Route::get('/suspended', [\App\Http\Controllers\SubscriptionController::class, 'suspended'])->name('subscription.suspended');
 });
 

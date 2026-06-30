@@ -7,6 +7,7 @@ use App\Mail\VerifyEmail;
 use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\StripeService;
 use Database\Seeders\NotificationTemplateSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ class TenantController extends Controller
         return view('auth.register');
     }
 
-    public function register(Request $request): RedirectResponse
+    public function register(Request $request, StripeService $stripe): RedirectResponse
     {
         $validated = $request->validate([
             'business_name' => 'required|string|max:255',
@@ -34,7 +35,7 @@ class TenantController extends Controller
             'admin_password' => 'required|string|min:8|confirmed',
         ]);
 
-        return DB::transaction(function () use ($validated) {
+        return DB::transaction(function () use ($validated, $stripe) {
             $tenant = Tenant::create([
                 'name' => $validated['business_name'],
                 'slug' => Str::slug($validated['business_name']) . '-' . Str::random(4),
@@ -45,6 +46,15 @@ class TenantController extends Controller
                 'trial_ends_at' => now()->addDays(7),
                 'subscription_status' => 'trial',
             ]);
+
+            try {
+                $stripe->createCustomer($tenant);
+            } catch (\Throwable $e) {
+                logger()->warning('No se pudo crear el cliente en Stripe durante el registro', [
+                    'tenant_id' => $tenant->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             $user = User::create([
                 'name' => $validated['admin_name'],

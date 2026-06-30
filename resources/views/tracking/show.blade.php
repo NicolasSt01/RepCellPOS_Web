@@ -11,7 +11,10 @@
     <div class="min-h-full py-12 px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-2xl">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-indigo-600">RepCellPOS</h1>
+                <a href="{{ url('/') }}" class="inline-flex items-center gap-2">
+                    <img src="{{ asset('logo.png') }}" alt="RepCellPOS" class="w-8 h-8 rounded-lg object-cover">
+                    <span class="text-3xl font-bold text-indigo-600">RepCell<span class="text-gray-900">POS</span></span>
+                </a>
                 <p class="mt-2 text-lg text-gray-600">Seguimiento de Orden de Trabajo</p>
             </div>
 

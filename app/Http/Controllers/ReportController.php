@@ -461,11 +461,15 @@ class ReportController extends Controller
         [$dateFrom, $dateTo] = $this->getDateRange($request);
         $tenantId = $request->user()->tenant_id;
 
-        $movements = KardexMovement::where('tenant_id', $tenantId)
+        $query = KardexMovement::where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
-            ->with('product', 'user')
-            ->orderByDesc('created_at')
-            ->get();
+            ->with('product', 'user');
+
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->product_id);
+        }
+
+        $movements = $query->orderByDesc('created_at')->get();
 
         $totalEntradas = $movements->where('type', 'entrada')->sum('quantity');
         $totalSalidas = $movements->where('type', 'salida')->sum('quantity');
@@ -479,9 +483,20 @@ class ReportController extends Controller
             $movements->where('type', 'ajuste')->count(),
         ]);
 
+        $products = Product::where('tenant_id', $tenantId)
+            ->where('type', 'producto')
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+
+        $selectedProductId = $request->product_id;
+        $productOptions = $products->reduce(function ($carry, $p) use ($selectedProductId) {
+            $selected = $selectedProductId == $p->id ? 'selected' : '';
+            return $carry . "<option value=\"{$p->id}\" {$selected}>" . e($p->name) . " ({$p->code})</option>";
+        }, '<option value="">Todos los productos</option>');
+
         return view('reportes.kardex', compact(
             'movements', 'totalEntradas', 'totalSalidas', 'totalAjustes',
-            'totalMovements', 'typeLabels', 'typeData'
+            'totalMovements', 'typeLabels', 'typeData', 'products', 'productOptions'
         ));
     }
 

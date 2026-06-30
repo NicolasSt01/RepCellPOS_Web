@@ -10,7 +10,10 @@
 <body class="h-full">
     <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-md">
-            <h1 class="text-center text-3xl font-bold text-indigo-600 dark:text-indigo-400">RepCellPOS</h1>
+            <a href="{{ url('/') }}" class="flex items-center justify-center gap-2">
+                <img src="{{ asset('logo.png') }}" alt="RepCellPOS" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
+                <span class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">RepCell<span class="text-gray-900 dark:text-gray-100">POS</span></span>
+            </a>
             <h2 class="mt-6 text-center text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                 Iniciar sesión
             </h2>

@@ -19,6 +19,8 @@ class Plan extends Model
         'sort_order',
         'is_active',
         'is_highlight',
+        'stripe_product_id',
+        'stripe_price_id',
     ];
 
     protected function casts(): array

@@ -27,37 +27,95 @@
         </div>
     @endif
 
-    @if($pendingPayment)
-        <div class="mb-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6">
-            <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">Pago pendiente</h3>
-            <p class="text-sm text-blue-700 dark:text-blue-300 mb-4">
-                Seleccionaste el plan <strong>{{ $pendingPayment->plan->name ?? $pendingPayment->plan_type }}</strong>
-                por <strong>${{ number_format($pendingPayment->amount, 2) }} MXN</strong>.
-                Realiza tu pago y sube el comprobante.
+    @if(session('session_id'))
+        <div class="mb-6 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-6">
+            <h3 class="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">Pago completado</h3>
+            <p class="text-sm text-green-700 dark:text-green-300">
+                Gracias por tu pago. Tu suscripción se está procesando y se activará en unos momentos.
             </p>
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-blue-200 dark:border-blue-700">
-                <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Datos para transferencia</h4>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Banco: NexaCore</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">CLABE: 000 000 000 000 000 000</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Titular: NexaCore Software</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Concepto: {{ $tenant->slug }} - {{ $pendingPayment->plan->name ?? $pendingPayment->plan_type }}</p>
-            </div>
-            @if(!$pendingPayment->payment_proof)
-                <form method="POST" action="{{ route('subscription.payment-proof') }}" enctype="multipart/form-data" class="space-y-3">
-                    @csrf
-                    <input type="hidden" name="subscription_id" value="{{ $pendingPayment->id }}">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Comprobante de pago</label>
-                    <input type="file" name="payment_proof" accept=".jpg,.jpeg,.png,.pdf" required
-                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300">
-                    @error('payment_proof')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                    <button type="submit" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
-                        Subir comprobante
-                    </button>
-                </form>
+        </div>
+    @endif
+
+    @if($pendingPayment)
+        <div class="mb-6 rounded-lg {{ $pendingPayment->status === 'activa' && $pendingPayment->paid_via === 'stripe' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' }} border p-6">
+            @if($pendingPayment->paid_via === 'stripe')
+                <h3 class="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">Suscripción activa</h3>
+                <p class="text-sm text-green-700 dark:text-green-300">
+                    Tienes el plan <strong>{{ $pendingPayment->plan->name ?? $pendingPayment->plan_type }}</strong>
+                    por <strong>${{ number_format($pendingPayment->amount, 2) }} MXN</strong>.
+                    Tu suscripción está activa vía Stripe.
+                </p>
+                @if($pendingPayment->next_payment_date)
+                    @if($pendingPayment->cancel_at_period_end)
+                        <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-1 font-medium">
+                            ⏳ Cancelación programada. Tu acceso continúa hasta el {{ $pendingPayment->next_payment_date->format('d/m/Y') }}. Después de esa fecha tu suscripción terminará.
+                        </p>
+                    @else
+                        <p class="text-sm text-green-600 dark:text-green-400 mt-1">
+                            Próximo pago: {{ $pendingPayment->next_payment_date->format('d/m/Y') }}.
+                        </p>
+                    @endif
+                @endif
+                <div class="mt-4 flex gap-3">
+                    <a href="{{ route('subscription.portal') }}"
+                       class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                        Gestionar suscripción
+                    </a>
+                    @if($pendingPayment->cancel_at_period_end)
+                        <form method="POST" action="{{ route('subscription.resume') }}" class="inline">
+                            @csrf
+                            <button type="submit"
+                               class="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 transition-colors">
+                                Reactivar suscripción
+                            </button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('subscription.cancel') }}" class="inline"
+                              onsubmit="return confirm('¿Estás seguro de cancelar la renovación? Tu acceso continuará hasta el final del período ya pagado.');">
+                            @csrf
+                            <button type="submit"
+                               class="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 transition-colors">
+                                Cancelar renovación
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            @elseif($pendingPayment->paid_via === 'transfer')
+                <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">Pago por transferencia</h3>
+                <p class="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                    Seleccionaste el plan <strong>{{ $pendingPayment->plan->name ?? $pendingPayment->plan_type }}</strong>
+                    por <strong>${{ number_format($pendingPayment->amount, 2) }} MXN</strong>.
+                    Realiza tu pago y sube el comprobante.
+                </p>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-blue-200 dark:border-blue-700">
+                    <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Datos para transferencia</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Banco: NexaCore</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">CLABE: 000 000 000 000 000 000</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Titular: NexaCore Software</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Concepto: {{ $tenant->slug }} - {{ $pendingPayment->plan->name ?? $pendingPayment->plan_type }}</p>
+                </div>
+                @if(!$pendingPayment->payment_proof)
+                    <form method="POST" action="{{ route('subscription.payment-proof') }}" enctype="multipart/form-data" class="space-y-3">
+                        @csrf
+                        <input type="hidden" name="subscription_id" value="{{ $pendingPayment->id }}">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Comprobante de pago</label>
+                        <input type="file" name="payment_proof" accept=".jpg,.jpeg,.png,.pdf" required
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300">
+                        @error('payment_proof')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                        <button type="submit" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                            Subir comprobante
+                        </button>
+                    </form>
+                @else
+                    <p class="text-sm text-green-600 dark:text-green-400">✅ Comprobante subido. Espera a que el administrador lo confirme.</p>
+                @endif
             @else
-                <p class="text-sm text-green-600 dark:text-green-400">✅ Comprobante subido. Espera a que el administrador lo confirme.</p>
+                <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">Pago pendiente</h3>
+                <p class="text-sm text-blue-700 dark:text-blue-300">
+                    Estás siendo redirigido a Stripe para completar el pago.
+                </p>
             @endif
         </div>
     @endif
@@ -83,7 +141,7 @@
                     <span class="mt-4 inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-400">Plan actual</span>
                 @elseif($isPending)
                     <span class="mt-4 inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 text-xs font-semibold text-yellow-700 dark:text-yellow-400">Pendiente de pago</span>
-                @elseif($tenant->subscription_status !== 'trial' || ($tenant->trial_ends_at && now()->gt($tenant->trial_ends_at)))
+                @elseif($tenant->subscription_status !== 'active' || $tenant->plan_id !== $plan->id)
                     <form method="POST" action="{{ route('subscription.select') }}" class="mt-4">
                         @csrf
                         <input type="hidden" name="plan_id" value="{{ $plan->id }}">
@@ -134,5 +192,18 @@
             </div>
         @endforeach
     </div>
+
+    @if($tenant->subscription_status === 'active' && $tenant->stripe_customer_id)
+        <div class="mt-8 text-center">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">¿Necesitas cambiar de plan, actualizar método de pago o cancelar?</p>
+            <form method="POST" action="{{ route('subscription.portal') }}" class="inline">
+                @csrf
+                <button type="submit"
+                   class="inline-flex items-center rounded-md bg-gray-800 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 transition-colors">
+                    Gestionar suscripción en Stripe
+                </button>
+            </form>
+        </div>
+    @endif
 </div>
 @endsection

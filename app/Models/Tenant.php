@@ -40,6 +40,7 @@ class Tenant extends Model
         'plan_id',
         'trial_ends_at',
         'subscription_status',
+        'stripe_customer_id',
     ];
 
     protected function casts(): array

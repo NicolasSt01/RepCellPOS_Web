@@ -43,7 +43,31 @@
 
             <div class="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 sm:rounded-lg">
                 <div class="p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Historial de Kardex</h2>
+                    <div class="sm:flex sm:items-center sm:justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Historial de Kardex</h2>
+                        <a href="{{ route('reportes.kardex', ['product_id' => $product->id]) }}"
+                           class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">Ver en reportes →</a>
+                    </div>
+
+                    <form method="GET" class="flex flex-wrap items-end gap-2 mb-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Desde</label>
+                            <input type="date" name="date_from" value="{{ $dateFrom }}"
+                                class="block rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Hasta</label>
+                            <input type="date" name="date_to" value="{{ $dateTo }}"
+                                class="block rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-700 text-sm">
+                        </div>
+                        <button type="submit"
+                            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">Filtrar</button>
+                        @if($dateFrom || $dateTo)
+                        <a href="{{ route('products.show', $product) }}"
+                            class="inline-flex items-center rounded-md bg-white dark:bg-gray-700 px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">Limpiar</a>
+                        @endif
+                    </form>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700/50">
@@ -75,7 +99,7 @@
                                     <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ $movement->user->name }}</td>
                                 </tr>
                                 @empty
-                                <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No hay movimientos registrados.</td></tr>
+                                <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No hay movimientos registrados.{{ $dateFrom || $dateTo ? ' en el período seleccionado.' : '' }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

@@ -25,6 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
             ->appendOutputTo(storage_path('logs/pickup-reminders.log'));
     })
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            'stripe/webhook',
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\SetTenantMiddleware::class,
         ]);

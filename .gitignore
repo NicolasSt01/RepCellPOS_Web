@@ -61,8 +61,16 @@ tester.json
 
 # AI agent skills locales
 /.claude/
+/.agents/
+/.qwen/
+skills-lock.json
 reporte-e2e-registro.md
 reporte-e2e-completo.md
 reporte-e2e-flujo.md
 IntegracionWhatsapp.md
-.env.example
+
+# Internal docs & local assets
+/docs/
+logonew.jpeg
+logonew1.png
+public/sitemap.xml
